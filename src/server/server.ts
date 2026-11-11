@@ -3,10 +3,12 @@ import { loadConfig, ensureDirs } from './config';
 import { logger } from './logger';
 import { openDatabase } from './db/connection';
 import { runMigrations } from './db/migrate';
+import { backupNow } from './db/backup';
 import { DAO } from './db/dao';
 import { createApp } from './app';
 import { MetadataRateLimiter } from './metadata/queue';
 import { MusicBrainzClient } from './metadata/musicbrainz';
+import { downloadCover } from './metadata/covers';
 
 const cfg = loadConfig();
 ensureDirs(cfg);
@@ -18,7 +20,38 @@ const dao = new DAO(db);
 // 元数据上游限流（复审 V2）：全局串行 ≥1.05s + 30/min 自我防线；UA 合规见 config
 const limiter = new MetadataRateLimiter();
 const mb = new MusicBrainzClient(limiter, cfg.userAgent);
-const app = createApp(dao, cfg, mb);
+
+// Step 2（F3）：落库后异步封面落盘——不阻塞响应，失败仅日志（重加同专辑可补）
+const onAlbumAdded = (albumId: string, sourceId: string, coverUrl: string | null): void => {
+  if (coverUrl === null) return;
+  void (async () => {
+    try {
+      const filename = await downloadCover({ coverUrl, sourceId, coversDir: cfg.coversDir, userAgent: cfg.userAgent });
+      dao.setAlbumCoverLocal(albumId, filename);
+      logger.info('covers', 'cover saved', { albumId, filename });
+    } catch (err) {
+      logger.warn('covers', 'cover download failed', { albumId, err: String(err) });
+    }
+  })();
+};
+
+const app = createApp(dao, cfg, mb, { onAlbumAdded });
+
+// 备份（R1/V14）：启动时 + 每日定时；按天去重，保留 7 天；失败不阻塞
+try {
+  const f = backupNow(db, cfg.backupsDir);
+  if (f !== null) logger.info('server', 'startup backup created', { file: f });
+} catch (err) {
+  logger.warn('server', 'startup backup failed', { err: String(err) });
+}
+setInterval(() => {
+  try {
+    const f = backupNow(db, cfg.backupsDir);
+    if (f !== null) logger.info('server', 'daily backup created', { file: f });
+  } catch (err) {
+    logger.warn('server', 'daily backup failed', { err: String(err) });
+  }
+}, 24 * 3600_000).unref();
 
 const server = serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.host }, (_info) => {
   logger.info('server', `listening on http://${cfg.host}:${cfg.port}`, {

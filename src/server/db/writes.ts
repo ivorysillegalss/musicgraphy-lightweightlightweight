@@ -24,16 +24,34 @@ export function upsertAlbum(
   const existing = st.get('SELECT id FROM album_metadata WHERE source = ? AND source_id = ?').get(input.source, input.source_id) as Row | undefined;
   if (existing) {
     const id = asStr(cell(existing, 'id'), 'id');
-    st.get('UPDATE album_metadata SET title = ?, artist = ?, release_year = ?, cover_url = ?, genres = ?, country = ?, updated_at = ? WHERE id = ?').run(
-      input.title,
-      input.artist,
-      input.release_year ?? null,
-      input.cover_url ?? null,
-      genresJson,
-      input.country ?? null,
-      nowIso(),
-      id
-    );
+    // 保守合并（IM-12）：只有非空字段才覆盖——重复添加路径（409 转化提示）不会清空已有快照
+    const sets: string[] = ['updated_at = ?'];
+    const params: (string | number | null)[] = [nowIso()];
+    if (input.title !== '') {
+      sets.push('title = ?');
+      params.push(input.title);
+    }
+    if (input.artist !== '') {
+      sets.push('artist = ?');
+      params.push(input.artist);
+    }
+    if (input.release_year !== undefined && input.release_year !== null) {
+      sets.push('release_year = ?');
+      params.push(input.release_year);
+    }
+    if (input.cover_url !== undefined && input.cover_url !== null && input.cover_url !== '') {
+      sets.push('cover_url = ?');
+      params.push(input.cover_url);
+    }
+    if (genresJson !== null) {
+      sets.push('genres = ?');
+      params.push(genresJson);
+    }
+    if (input.country !== undefined && input.country !== null && input.country !== '') {
+      sets.push('country = ?');
+      params.push(input.country);
+    }
+    st.get(`UPDATE album_metadata SET ${sets.join(', ')} WHERE id = ?`).run(...params, id);
     return { id, existed: true };
   }
   const id = randomUUID();
@@ -150,6 +168,11 @@ export function setTags(db: Db, st: StmtCache, recordId: string, names: string[]
     st.get('UPDATE collection_record SET updated_at = ? WHERE id = ?').run(nowIso(), recordId);
   });
   return pairs.map(([norm]) => norm);
+}
+
+/** Step 2 封面落盘回填（F3）：cover_local 存文件名（服务层拼 /covers/ 前缀，IM-12） */
+export function setAlbumCoverLocal(st: StmtCache, albumId: string, filename: string | null): void {
+  st.get('UPDATE album_metadata SET cover_local = ?, updated_at = ? WHERE id = ?').run(filename, nowIso(), albumId);
 }
 
 function tx<T>(db: Db, fn: () => T): T {

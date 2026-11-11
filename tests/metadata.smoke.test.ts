@@ -83,6 +83,9 @@ describe('GET /api/v1/search/albums（FR-1 输入端）', () => {
     return { app: createApp(dao, cfg, mb), calls };
   };
 
+  // 鉴权（V10）后 API 需凭据：统一 Bearer
+  const bearer = (): { headers: Record<string, string> } => ({ headers: { Authorization: `Bearer ${cfg.accessKey}` } });
+
   before(() => {
     dir = mkdtempSync(join(tmpdir(), 'mg-meta-'));
     db = openDatabase(join(dir, 'test.db'));
@@ -98,7 +101,7 @@ describe('GET /api/v1/search/albums（FR-1 输入端）', () => {
 
   test('200：字段规范化（年份/artist-credit join/CAA front-250）', async () => {
     const { app, calls } = makeApp();
-    const res = await app.request(`/api/v1/search/albums?q=${encodeURIComponent('ok computer radiohead')}`);
+    const res = await app.request(`/api/v1/search/albums?q=${encodeURIComponent('ok computer radiohead')}`, bearer());
     assert.equal(res.status, 200);
     assert.match(calls[0] ?? '', /musicbrainz\.org\/ws\/2\/release\?query=ok%20computer%20radiohead&fmt=json&limit=12/);
     const json = (await res.json()) as { data: Array<Record<string, unknown>> };
@@ -119,7 +122,7 @@ describe('GET /api/v1/search/albums（FR-1 输入端）', () => {
   test('已入库候选 → in_collection=true（FR-1 捷径③"已收藏前置标记"）', async () => {
     dao.upsertAlbum({ source: 'musicbrainz', source_id: 'rel-1', title: 'OK Computer', artist: 'Radiohead', release_year: 1997 });
     const { app } = makeApp();
-    const res = await app.request('/api/v1/search/albums?q=ok');
+    const res = await app.request('/api/v1/search/albums?q=ok', bearer());
     const json = (await res.json()) as { data: Array<Record<string, unknown>> };
     assert.equal(json.data[0]?.['in_collection'], true);
     assert.equal(json.data[1]?.['in_collection'], false);
@@ -127,17 +130,17 @@ describe('GET /api/v1/search/albums（FR-1 输入端）', () => {
 
   test('q 过短 → 422 invalid_query；limit 钳制 1–25', async () => {
     const { app } = makeApp();
-    const short = await app.request('/api/v1/search/albums?q=a');
+    const short = await app.request('/api/v1/search/albums?q=a', bearer());
     assert.equal(short.status, 422);
     assert.equal(((await short.json()) as { error: { code: string } }).error.code, 'invalid_query');
     const { app: app2, calls } = makeApp();
-    await app2.request('/api/v1/search/albums?q=ok+computer&limit=999');
+    await app2.request('/api/v1/search/albums?q=ok+computer&limit=999', bearer());
     assert.match(calls[0] ?? '', /limit=25/);
   });
 
   test('上游 503 → 502 upstream_unavailable + Retry-After 透传（R2 风险路径）', async () => {
     const { app } = makeApp({ status: 503, retryAfter: '7' });
-    const res = await app.request('/api/v1/search/albums?q=anything');
+    const res = await app.request('/api/v1/search/albums?q=anything', bearer());
     assert.equal(res.status, 502);
     assert.equal(res.headers.get('Retry-After'), '7');
     const json = (await res.json()) as { error: { code: string; details: Record<string, unknown> } };

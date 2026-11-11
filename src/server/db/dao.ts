@@ -127,4 +127,5 @@ export class DAO {
   updateRecord = (id: string, patch: Parameters<typeof writes.updateRecord>[2], userId = 'local'): { id: string } =>
     writes.updateRecord(this.st, id, patch, userId);
   setTags = (recordId: string, names: string[], userId = 'local'): string[] => writes.setTags(this.db, this.st, recordId, names, userId);
+  setAlbumCoverLocal = (albumId: string, filename: string | null): void => writes.setAlbumCoverLocal(this.st, albumId, filename);
 }

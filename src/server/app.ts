@@ -4,19 +4,20 @@ import { serveStatic } from '@hono/node-server/serve-static';
 import type { Config } from './config';
 import type { DAO } from './db/dao';
 import { CursorInvalidError, DuplicateRecordError, NotFoundError } from './db/dao';
+import { errorBody } from './http';
+import { metadataRoutes } from './routes/metadata';
+import type { MusicBrainzClient } from './metadata/musicbrainz';
 
-// 错误 envelope（ADR-007 条 6，复审 V1）：{error:{code,message,details?}}，禁 200+error
-export function errorBody(code: string, message: string, details?: unknown): { error: { code: string; message: string; details?: unknown } } {
-  return { error: { code, message, ...(details === undefined ? {} : { details }) } };
-}
-
-export function createApp(dao: DAO, cfg: Config): Hono {
+export function createApp(dao: DAO, cfg: Config, mb: MusicBrainzClient): Hono {
   const app = new Hono();
 
   // 静态资源（复审 V8 拓扑）：serveStatic 的 root 是基准目录，URL 路径整体拼在其后——
   // /static/main.js → ./dist/static/main.js；/covers/xx.jpg → ./data/covers/xx.jpg
   app.use('/static/*', serveStatic({ root: './dist' }));
   app.use('/covers/*', serveStatic({ root: './data' }));
+
+  // 元数据域子应用（FR-1 输入端）：/api/v1/search/albums
+  app.route('/api/v1', metadataRoutes(dao, mb));
 
   app.get('/api/v1/health', (c) =>
     c.json({

@@ -39,6 +39,8 @@ export function escapeLike(s: string): string {
 
 export const normalizeTag = (s: string): string => s.trim().toLowerCase();
 
+export const nowIso = (): string => new Date().toISOString();
+
 /** 组合筛选（FR-2 chips）。exclude = "轴排除式 facet 计数"时剔除自身轴 */
 export function buildWhere(f: Filters, userId: string, exclude?: Axis): { where: string; params: Cell[] } {
   const conds: string[] = ['r.user_id = ?'];

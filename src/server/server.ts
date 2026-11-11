@@ -5,6 +5,8 @@ import { openDatabase } from './db/connection';
 import { runMigrations } from './db/migrate';
 import { DAO } from './db/dao';
 import { createApp } from './app';
+import { MetadataRateLimiter } from './metadata/queue';
+import { MusicBrainzClient } from './metadata/musicbrainz';
 
 const cfg = loadConfig();
 ensureDirs(cfg);
@@ -12,7 +14,11 @@ ensureDirs(cfg);
 const db = openDatabase(cfg.dbPath);
 const applied = runMigrations(db, 'db/migrations');
 const dao = new DAO(db);
-const app = createApp(dao, cfg);
+
+// 元数据上游限流（复审 V2）：全局串行 ≥1.05s + 30/min 自我防线；UA 合规见 config
+const limiter = new MetadataRateLimiter();
+const mb = new MusicBrainzClient(limiter, cfg.userAgent);
+const app = createApp(dao, cfg, mb);
 
 const server = serve({ fetch: app.fetch, port: cfg.port, hostname: cfg.host }, (_info) => {
   logger.info('server', `listening on http://${cfg.host}:${cfg.port}`, {

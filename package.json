@@ -1,0 +1,39 @@
+{
+  "name": "musicgraphy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Musicgraphy 2.0 — personal album archive (Node 26 + node:sqlite + Hono SSR)",
+  "engines": {
+    "node": ">=26.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server/server.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.ts\" \"scripts/**/*.ts\" \"tests/**/*.ts\"",
+    "build": "vite build",
+    "check": "npm run typecheck && npm run lint && npm run build && npm run test",
+    "migrate": "tsx src/server/db/migrate.ts",
+    "seed": "tsx scripts/seed-dev.ts",
+    "spike:sqlite": "tsx scripts/spike-sqlite.ts",
+    "spike:mb": "tsx scripts/spike-musicbrainz.ts",
+    "test": "node --import tsx --test \"tests/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.6",
+    "hono": "^4.13.17"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.2",
+    "vite": "^8.3.7"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true
+  }
+}

@@ -18,12 +18,13 @@ export interface IslandModule {
 
 type IslandLoader = () => Promise<IslandModule>;
 
-/** 岛屿注册表（ADR-003 四岛屿；键 = data-island 属性值；保持懒加载勿静态引入）。 */
+/** 岛屿注册表（ADR-003 四岛屿 + 第 5 岛屿 wall-scroll；键 = data-island 属性值；保持懒加载勿静态引入）。 */
 const ISLANDS: Record<string, IslandLoader> = {
   'add-dialog': () => import('./islands/add-dialog.js'),
   'filter-cabin': () => import('./islands/filter-cabin.js'),
   'search-box': () => import('./islands/search-box.js'),
-  'keyboard-flow': () => import('./islands/keyboard-flow.js')
+  'keyboard-flow': () => import('./islands/keyboard-flow.js'),
+  'wall-scroll': () => import('./islands/wall-scroll.js')
 };
 
 async function mountIslands(container: ParentNode = document): Promise<void> {

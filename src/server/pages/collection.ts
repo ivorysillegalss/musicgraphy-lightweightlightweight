@@ -237,7 +237,7 @@ export function renderCollection(d: CollectionPageInput, layoutOpts: Omit<Layout
   ${d.echo === null ? '' : echoCard(d.echo)}
   <div data-island="filter-cabin">
     ${cabinSection(d.filter, d.counts)}
-    <div class="results">
+    <div class="results" data-island="wall-scroll">
       ${d.error !== null ? errorStrip(d.error, buildHref(d.filter)) : resultsSection(d.items, d.filter, d.meta, d.total ?? d.items.length)}
     </div>
   </div>

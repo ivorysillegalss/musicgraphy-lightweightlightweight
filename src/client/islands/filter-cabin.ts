@@ -1,16 +1,15 @@
 /**
- * 岛屿 filter-cabin —— 试错式筛选舱 + 封面墙增强（FR-2 / FR-5 / D-P3，ADR-003 四岛屿之一）。
+ * 岛屿 filter-cabin —— 试错式筛选舱（FR-2 / D-P3，ADR-003 岛屿之一）。
  *
  * 片段交换：拦截舱内 chips/移除/「移除全部」点击 → 并行 fetch /fragment/cabin + /fragment/wall
- * （同 query string）→ 替换对应容器；AbortController 竞态防护 + 250ms 防抖合并连点；
+ * （同 query string）→ 替换对应容器；AbortController 竞态防护 + 300ms 防抖合并连点；
  * swap 成功后 history.pushState 同步 URL（popstate 反向恢复）——URL 即状态（DD3）。
  * 错误注入：片段 503/网络失败 → 注入 .error-strip（服务端片段自带，禁止吞错）。
  * 事件委托挂 root 级（片段是运行时替换的，禁止对单个 chip 挂监听）。
- * 无限追加（FR-5）：IntersectionObserver 预取「加载下一页」→ 追加封面卡（cursor 服务端给，
- * LIMIT 60 分页不破坏——内存纪律①）；追加不改变 URL（刷新安全）。
+ * 无限追加（FR-5）已剥离至第 5 岛屿 wall-scroll（ADR-003 评审条款，cursor 服务端下发、
+ * LIMIT 60 分页不破坏）：本岛 swap 换墙后由其 MutationObserver 自动重新布防，两岛互不感知。
  * 无 JS 基线不破坏：所有增强以 addEventListener 叠加，<a href> 原生跳转是兜底。
  */
-const NEXT_MARGIN = '480px';
 
 const errorStripHtml =
   '<div class="error-strip" role="alert"><div style="font-weight:600;">筛选加载失败——网络没有回应。</div>' +
@@ -57,7 +56,6 @@ export function mount(root: HTMLElement): void {
       if (results !== null) results.innerHTML = wallHtml;
       if (push) history.pushState({}, '', href);
       announce();
-      armNext();
     } catch (err) {
       if (!(err instanceof DOMException && err.name === 'AbortError')) injectError(parts().results);
     } finally {
@@ -75,72 +73,19 @@ export function mount(root: HTMLElement): void {
   root.addEventListener('click', (e) => {
     const a = e.target instanceof Element ? e.target.closest<HTMLAnchorElement>('a') : null;
     if (a === null) return;
+    // 「加载下一页」（data-next）不在此拦截——归第 5 岛屿 wall-scroll 管（IO 预取 + 点击兜底）
     const isChip = a.classList.contains('chip') || a.classList.contains('chip-x') || a.classList.contains('btn-text');
-    const isNext = a.hasAttribute('data-next');
-    if (!isChip && !isNext) return;
+    if (!isChip) return;
     e.preventDefault();
-    if (isNext) {
-      void appendNext(a);
-      return;
-    }
     clearTimeout(debounceT);
-    debounceT = setTimeout(() => void swap(hrefOf(a), true), 250); // 连点合并；最后一次生效
+    debounceT = setTimeout(() => void swap(hrefOf(a), true), 300); // 连点合并（拆分方案 §4.2 契约：300ms 防抖）；最后一次生效
   });
 
   window.addEventListener('popstate', () => {
     clearTimeout(debounceT);
+    // 守卫：历史条目非本页（如经详情页往返后的边界条目）时不做片段交换——
+    // 只在 Collection 主页 URL 上恢复，避免把首页舱/墙误注入到其他路径的文档里
+    if (location.pathname !== '/') return;
     void swap(`${location.pathname}${location.search}`, false);
   });
-
-  // —— 无限追加（FR-5）：IO 预取下一页封面卡并追加；cursor 由服务端链接给出 ——
-  const appendNext = async (link: HTMLAnchorElement): Promise<void> => {
-    if (link.getAttribute('aria-busy') === 'true') return;
-    link.setAttribute('aria-busy', 'true');
-    ctrl?.abort();
-    ctrl = new AbortController();
-    try {
-      const wallHtml = await fetchText(`/fragment/wall${qsOf(hrefOf(link))}`, ctrl.signal);
-      const { results } = parts();
-      if (results === null) return;
-      const tpl = document.createElement('template');
-      tpl.innerHTML = wallHtml; // 服务端转义片段（hono/html）
-      const frag = tpl.content;
-      const nextWall = frag.querySelector('.cover-wall');
-      const curWall = results.querySelector('.cover-wall');
-      if (nextWall !== null && curWall !== null) {
-        for (const card of Array.from(nextWall.children)) curWall.append(card);
-      } else {
-        results.innerHTML = wallHtml; // 空态/错误态片段整块替换
-      }
-      const oldNext = results.querySelector('.wall-next');
-      const newNext = frag.querySelector('.wall-next');
-      if (oldNext !== null) oldNext.remove();
-      if (newNext !== null) results.append(newNext);
-      armNext();
-    } catch (err) {
-      if (!(err instanceof DOMException && err.name === 'AbortError')) injectError(parts().results);
-    } finally {
-      link.removeAttribute('aria-busy');
-    }
-  };
-
-  let io: IntersectionObserver | null = null;
-  const armNext = (): void => {
-    io?.disconnect();
-    const link = root.querySelector<HTMLAnchorElement>('[data-next]');
-    if (link === null || typeof IntersectionObserver === 'undefined') return;
-    io = new IntersectionObserver(
-      (entries) => {
-        for (const en of entries) {
-          if (en.isIntersecting) {
-            io?.disconnect();
-            void appendNext(link);
-          }
-        }
-      },
-      { rootMargin: NEXT_MARGIN }
-    );
-    io.observe(link);
-  };
-  armNext();
 }

@@ -1,5 +1,6 @@
-// 基础设施冒烟：封面落盘（F3，零网络）+ 备份（R1/V14 按天去重与保留策略）
+// 基础设施冒烟：封面落盘（F3 + Step 4 内容 hash，零网络）+ 备份（R1/V14 按天去重与保留策略）
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,7 +19,7 @@ describe('封面落盘（F3）', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test('成功：sha1(source_id) 命名 + 幂等（第二次不触网）', async () => {
+  test('成功：sha256 内容 hash 命名 + 内容寻址幂等（同字节同名）', async () => {
     const coversDir = join(dir, 'covers');
     let calls = 0;
     const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 1, 2, 3, 4]);
@@ -26,26 +27,37 @@ describe('封面落盘（F3）', () => {
       calls++;
       return new Response(bytes, { status: 200, headers: { 'Content-Type': 'image/jpeg' } });
     }) as typeof fetch;
-    const name = await downloadCover({ coverUrl: 'https://coverartarchive.org/release/x/front-250', sourceId: 'src-1', coversDir, userAgent: 't', fetchFn });
-    assert.match(name, /^[0-9a-f]{40}\.jpg$/);
-    assert.equal(calls, 1);
+    const name = await downloadCover({ coverUrl: 'https://coverartarchive.org/release/x/front-250', coversDir, userAgent: 't', fetchFn });
+    assert.match(name, /^[0-9a-f]{64}\.jpg$/, 'Step 4：文件名 = 内容 sha256（64 hex）');
+    assert.equal(name, createHash('sha256').update(bytes).digest('hex') + '.jpg', '内容寻址：名字由字节决定');
     assert.ok(existsSync(join(coversDir, name)));
-    const again = await downloadCover({ coverUrl: 'https://coverartarchive.org/release/x/front-250', sourceId: 'src-1', coversDir, userAgent: 't', fetchFn });
-    assert.equal(again, name);
-    assert.equal(calls, 1, '已落盘应跳过下载');
+    const again = await downloadCover({ coverUrl: 'https://coverartarchive.org/release/x/front-250', coversDir, userAgent: 't', fetchFn });
+    assert.equal(again, name, '同字节 → 同名（内容寻址幂等）');
+    assert.equal(calls, 2, '内容 hash 无法预知，第二次经下载后落名去重（路由层由 cover_local 免下载）');
+  });
+
+  test('不同字节 → 不同文件名（immutable 正确性前提）', async () => {
+    const coversDir = join(dir, 'covers-diff');
+    const b1 = new Uint8Array([1, 2, 3]);
+    const b2 = new Uint8Array([9, 9, 9]);
+    const fetchOf = (payload: Uint8Array<ArrayBuffer>) => (async () => new Response(payload, { status: 200, headers: { 'Content-Type': 'image/png' } })) as typeof fetch;
+    const n1 = await downloadCover({ coverUrl: 'u', coversDir, userAgent: 't', fetchFn: fetchOf(b1) });
+    const n2 = await downloadCover({ coverUrl: 'u', coversDir, userAgent: 't', fetchFn: fetchOf(b2) });
+    assert.notEqual(n1, n2);
+    assert.match(n1, /^[0-9a-f]{64}\.png$/);
   });
 
   test('非图片响应 / 超过大小上限 → CoverDownloadError', async () => {
     const htmlFn = (async () => new Response('<html/>', { status: 200, headers: { 'Content-Type': 'text/html' } })) as typeof fetch;
     await assert.rejects(
-      () => downloadCover({ coverUrl: 'u', sourceId: 's2', coversDir: join(dir, 'c2'), userAgent: 't', fetchFn: htmlFn }),
+      () => downloadCover({ coverUrl: 'u', coversDir: join(dir, 'c2'), userAgent: 't', fetchFn: htmlFn }),
       CoverDownloadError
     );
     const big = new Uint8Array(64);
     big.fill(1);
     const bigFn = (async () => new Response(big, { status: 200, headers: { 'Content-Type': 'image/jpeg' } })) as typeof fetch;
     await assert.rejects(
-      () => downloadCover({ coverUrl: 'u', sourceId: 's3', coversDir: join(dir, 'c3'), userAgent: 't', fetchFn: bigFn, maxBytes: 8 }),
+      () => downloadCover({ coverUrl: 'u', coversDir: join(dir, 'c3'), userAgent: 't', fetchFn: bigFn, maxBytes: 8 }),
       CoverDownloadError
     );
   });

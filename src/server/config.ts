@@ -11,6 +11,8 @@ export interface Config {
   accessKey: string;
   sessionSecret: string;
   userAgent: string;
+  /** Discogs 个人令牌（冷门兜底源；缺省 → 该源停用，降级链自动跳过，Step 4） */
+  discogsToken: string | null;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -35,7 +37,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     accessKey,
     sessionSecret,
     // 上游 UA 合规（复审 V2）：MusicBrainz 要求显式 UA，缺失视为匿名加重限流
-    userAgent: env['USER_AGENT'] ?? 'Musicgraphy/0.1.0 (dev; contact unset)'
+    userAgent: env['USER_AGENT'] ?? 'Musicgraphy/0.1.0 (dev; contact unset)',
+    discogsToken: env['DISCOGS_TOKEN'] ?? null
   };
 }
 

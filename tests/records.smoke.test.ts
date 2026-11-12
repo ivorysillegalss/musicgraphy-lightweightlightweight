@@ -11,6 +11,7 @@ import { DAO } from '../src/server/db/dao';
 import { openDatabase, type Db } from '../src/server/db/connection';
 import { runMigrations } from '../src/server/db/migrate';
 import { MusicBrainzClient } from '../src/server/metadata/musicbrainz';
+import { MusicBrainzSource } from '../src/server/metadata/sources';
 import { MetadataRateLimiter } from '../src/server/metadata/queue';
 
 const stubFetch = (async () =>
@@ -33,7 +34,7 @@ describe('集合域路由（Step 1，ADR-007）', () => {
     runMigrations(db, 'db/migrations');
     dao = new DAO(db);
     cfg = loadConfig();
-    app = createApp(dao, cfg, new MusicBrainzClient(new MetadataRateLimiter({ minIntervalMs: 0 }), cfg.userAgent, stubFetch));
+    app = createApp(dao, cfg, [new MusicBrainzSource(new MusicBrainzClient(new MetadataRateLimiter({ minIntervalMs: 0 }), cfg.userAgent, stubFetch))]);
   });
 
   after(() => {

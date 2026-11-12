@@ -2,18 +2,19 @@
 // 合规（复审 V2）：显式 User-Agent（缺失视为匿名加重限流）+ 串行队列 + 超时
 // F1：搜索结果仅为候选，落库后 title/artist/cover 即本地快照，源失效不影响已存记录
 import type { MetadataRateLimiter } from './queue';
+import type { MetadataSource } from './sources';
 
 export interface AlbumCandidate {
-  source: 'musicbrainz';
+  source: MetadataSource;
   source_id: string;
   title: string;
   artist: string;
   release_year: number | null;
   cover_url: string | null;
   country: string | null;
-  /** MB 搜索结果不含 genres——补充 lookup（inc=genres）属 Step 4，见实现决策记录 IM-10 */
+  /** MB 搜索结果不含 genres——Deezer/iTunes 命中可带（02 §5.1"封面好"层） */
   genres: string[];
-  /** FR-1"已收藏前置标记"：由路由按库批量回填 */
+  /** FR-1"已收藏前置标记"：由路由按 collection_record 成员判定回填 */
   in_collection: boolean;
 }
 

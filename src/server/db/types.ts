@@ -1,6 +1,12 @@
 // 行类型 + 行映射（ADR-002：类型安全由 "SQL → DAO 返回类型" 手写接口层保证）
 import type { Cell, Row } from './sql';
 
+/** 跨源合并的别名引用（02 §5.2 / 评审 R4：alias_sources JSON 列的元素形状） */
+export interface AliasSourceRef {
+  source: string;
+  source_id: string;
+}
+
 export interface AlbumRow {
   id: string;
   source: string;
@@ -12,6 +18,7 @@ export interface AlbumRow {
   cover_local: string | null;
   genres: string[];
   country: string | null;
+  alias_sources: AliasSourceRef[];
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +108,21 @@ export function parseGenres(v: Cell): string[] {
   }
 }
 
+/** alias_sources JSON 列解析（02 §5.2：跨源合并的其余源 ID；坏值容错为空数组） */
+export function parseAliasSources(v: Cell): AliasSourceRef[] {
+  if (typeof v !== 'string' || v === '') return [];
+  try {
+    const parsed: unknown = JSON.parse(v);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (x): x is AliasSourceRef =>
+        typeof x === 'object' && x !== null && typeof (x as AliasSourceRef).source === 'string' && typeof (x as AliasSourceRef).source_id === 'string'
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function mapItem(r: Row): CollectionItem {
   return {
     id: asStr(cell(r, 'id'), 'id'),
@@ -135,6 +157,7 @@ export function mapAlbum(r: Row): AlbumRow {
     cover_local: asStrN(cell(r, 'cover_local')),
     genres: parseGenres(cell(r, 'genres')),
     country: asStrN(cell(r, 'country')),
+    alias_sources: parseAliasSources(cell(r, 'alias_sources')),
     created_at: asStr(cell(r, 'album_created_at') ?? cell(r, 'created_at'), 'album.created_at'),
     updated_at: asStr(cell(r, 'album_updated_at') ?? cell(r, 'updated_at'), 'album.updated_at')
   };

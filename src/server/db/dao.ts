@@ -2,7 +2,7 @@ import type { Db } from './connection';
 import { buildWhere, decodeCursor, encodeCursor, escapeLike, normalizeTag, SORTS, StmtCache, type Cell, type Filters, type Row } from './sql';
 import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_ECHO, SQL_RECORD_TAGS } from './queries';
 import { CursorInvalidError, NotFoundError } from './errors';
-import { asStr, cell, mapAlbum, mapItem, type AxisCounts, type CollectionDetail, type CollectionItem, type FacetCount, type Stats } from './types';
+import { asStr, cell, mapAlbum, mapItem, type AlbumRow, type AxisCounts, type CollectionDetail, type CollectionItem, type FacetCount, type Stats } from './types';
 import * as writes from './writes';
 
 export { DuplicateRecordError, NotFoundError, CursorInvalidError } from './errors';
@@ -117,6 +117,25 @@ export class DAO {
       const placeholders = chunk.map(() => '?').join(',');
       const rows = this.st.get(`SELECT source_id FROM album_metadata WHERE source = ? AND source_id IN (${placeholders})`).all(source, ...chunk) as Row[];
       for (const r of rows) found.add(asStr(cell(r, 'source_id'), 'source_id'));
+    }
+    return found;
+  }
+
+  /** 专辑行读取（封面懒下载 / 搜索响应锚定用）；不存在 → null */
+  getAlbum(albumId: string): AlbumRow | null {
+    const row = this.st.get('SELECT * FROM album_metadata WHERE id = ?').get(albumId) as Row | undefined;
+    return row ? mapAlbum(row) : null;
+  }
+
+  /** FR-1 捷径③（成员判定版）：候选专辑是否真的在 collection_record 中（搜索期会落 album_metadata，行存在 ≠ 已收藏） */
+  albumIdsInCollection(albumIds: string[]): Set<string> {
+    const found = new Set<string>();
+    for (let i = 0; i < albumIds.length; i += 100) {
+      const chunk = albumIds.slice(i, i + 100);
+      if (chunk.length === 0) continue;
+      const placeholders = chunk.map(() => '?').join(',');
+      const rows = this.st.get(`SELECT DISTINCT album_id FROM collection_record WHERE album_id IN (${placeholders})`).all(...chunk) as Row[];
+      for (const r of rows) found.add(asStr(cell(r, 'album_id'), 'album_id'));
     }
     return found;
   }

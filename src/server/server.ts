@@ -8,6 +8,7 @@ import { DAO } from './db/dao';
 import { createApp } from './app';
 import { MetadataRateLimiter } from './metadata/queue';
 import { MusicBrainzClient } from './metadata/musicbrainz';
+import { DeezerSource, DiscogsSource, ITunesSource, MusicBrainzSource, type AlbumSource } from './metadata/sources';
 import { downloadCover } from './metadata/covers';
 
 const cfg = loadConfig();
@@ -17,16 +18,25 @@ const db = openDatabase(cfg.dbPath);
 const applied = runMigrations(db, 'db/migrations');
 const dao = new DAO(db);
 
-// 元数据上游限流（复审 V2）：全局串行 ≥1.05s + 30/min 自我防线；UA 合规见 config
+// 元数据上游限流（复审 V2）：全局串行 ≥1.05s + 30/min 自我防线；UA 合规见 config。
+// 多源降级链（02 §5.1 / Step 4）：数组序 = 优先级；iTunes 叠加 20/min 单独配额；
+// Discogs 无令牌时停用（fail-soft 跳过）。
 const limiter = new MetadataRateLimiter();
 const mb = new MusicBrainzClient(limiter, cfg.userAgent);
+const sources: AlbumSource[] = [
+  new MusicBrainzSource(mb),
+  new DeezerSource(limiter, cfg.userAgent),
+  new ITunesSource(limiter, cfg.userAgent),
+  new DiscogsSource(limiter, cfg.userAgent, cfg.discogsToken)
+];
 
-// Step 2（F3）：落库后异步封面落盘——不阻塞响应，失败仅日志（重加同专辑可补）
-const onAlbumAdded = (albumId: string, sourceId: string, coverUrl: string | null): void => {
+// Step 2（F3）：落库后异步封面落盘——不阻塞响应，失败仅日志（重加同专辑可补）。
+// Step 4：文件名 = 内容 sha256（covers.ts），懒下载路由（/covers/a/:id）为兜底入口。
+const onAlbumAdded = (albumId: string, _sourceId: string, coverUrl: string | null): void => {
   if (coverUrl === null) return;
   void (async () => {
     try {
-      const filename = await downloadCover({ coverUrl, sourceId, coversDir: cfg.coversDir, userAgent: cfg.userAgent });
+      const filename = await downloadCover({ coverUrl, coversDir: cfg.coversDir, userAgent: cfg.userAgent });
       dao.setAlbumCoverLocal(albumId, filename);
       logger.info('covers', 'cover saved', { albumId, filename });
     } catch (err) {
@@ -35,7 +45,7 @@ const onAlbumAdded = (albumId: string, sourceId: string, coverUrl: string | null
   })();
 };
 
-const app = createApp(dao, cfg, mb, { onAlbumAdded });
+const app = createApp(dao, cfg, sources, { onAlbumAdded });
 
 // 备份（R1/V14）：启动时 + 每日定时；按天去重，保留 7 天；失败不阻塞
 try {

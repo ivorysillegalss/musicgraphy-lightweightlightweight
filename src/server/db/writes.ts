@@ -4,54 +4,20 @@ import type { Db } from './connection';
 import { DuplicateRecordError, NotFoundError } from './errors';
 import { normalizeTag, nowIso, type Row, type StmtCache } from './sql';
 import { asStr, cell } from './types';
+import { appendAlias, resolveAlbumTarget, type AlbumUpsertInput } from './album-merge';
 
-/** 元数据落库：同 (source, source_id) 则更新外部快照字段——永不触碰用户数据（I2 / AGENTS §4） */
-export function upsertAlbum(
-  db: Db,
-  st: StmtCache,
-  input: {
-    source: string;
-    source_id: string;
-    title: string;
-    artist: string;
-    release_year?: number | null;
-    cover_url?: string | null;
-    genres?: string[];
-    country?: string | null;
-  }
-): { id: string; existed: boolean } {
+/**
+ * 元数据落库（I2 / AGENTS §4：永不触碰用户数据）。三级落点（02 §5.2，见 album-merge.ts）：
+ * 主键命中 / 别名命中 / title+artist 归并 → 保守更新既有行（首个挂接的 album_metadata 保留，
+ * 其余源 ID 追加进 alias_sources）；均未命中 → 新建行。
+ */
+export function upsertAlbum(db: Db, st: StmtCache, input: AlbumUpsertInput): { id: string; existed: boolean } {
   const genresJson = input.genres && input.genres.length > 0 ? JSON.stringify(input.genres) : null;
-  const existing = st.get('SELECT id FROM album_metadata WHERE source = ? AND source_id = ?').get(input.source, input.source_id) as Row | undefined;
-  if (existing) {
-    const id = asStr(cell(existing, 'id'), 'id');
-    // 保守合并（IM-12）：只有非空字段才覆盖——重复添加路径（409 转化提示）不会清空已有快照
-    const sets: string[] = ['updated_at = ?'];
-    const params: (string | number | null)[] = [nowIso()];
-    if (input.title !== '') {
-      sets.push('title = ?');
-      params.push(input.title);
-    }
-    if (input.artist !== '') {
-      sets.push('artist = ?');
-      params.push(input.artist);
-    }
-    if (input.release_year !== undefined && input.release_year !== null) {
-      sets.push('release_year = ?');
-      params.push(input.release_year);
-    }
-    if (input.cover_url !== undefined && input.cover_url !== null && input.cover_url !== '') {
-      sets.push('cover_url = ?');
-      params.push(input.cover_url);
-    }
-    if (genresJson !== null) {
-      sets.push('genres = ?');
-      params.push(genresJson);
-    }
-    if (input.country !== undefined && input.country !== null && input.country !== '') {
-      sets.push('country = ?');
-      params.push(input.country);
-    }
-    st.get(`UPDATE album_metadata SET ${sets.join(', ')} WHERE id = ?`).run(...params, id);
+  const target = resolveAlbumTarget(st, input);
+  if (target.kind !== 'new') {
+    const id = asStr(cell(target.row, 'id'), 'id');
+    if (target.kind === 'identity') appendAlias(st, id, input.source, input.source_id);
+    updateAlbumFields(st, id, input, genresJson);
     return { id, existed: true };
   }
   const id = randomUUID();
@@ -69,6 +35,37 @@ export function upsertAlbum(
     nowIso()
   );
   return { id, existed: false };
+}
+
+/** 保守合并（IM-12）：只有非空字段才覆盖——重复添加路径（409 转化提示）不会清空已有快照 */
+function updateAlbumFields(st: StmtCache, id: string, input: AlbumUpsertInput, genresJson: string | null): void {
+  const sets: string[] = ['updated_at = ?'];
+  const params: (string | number | null)[] = [nowIso()];
+  if (input.title !== '') {
+    sets.push('title = ?');
+    params.push(input.title);
+  }
+  if (input.artist !== '') {
+    sets.push('artist = ?');
+    params.push(input.artist);
+  }
+  if (input.release_year !== undefined && input.release_year !== null) {
+    sets.push('release_year = ?');
+    params.push(input.release_year);
+  }
+  if (input.cover_url !== undefined && input.cover_url !== null && input.cover_url !== '') {
+    sets.push('cover_url = ?');
+    params.push(input.cover_url);
+  }
+  if (genresJson !== null) {
+    sets.push('genres = ?');
+    params.push(genresJson);
+  }
+  if (input.country !== undefined && input.country !== null && input.country !== '') {
+    sets.push('country = ?');
+    params.push(input.country);
+  }
+  st.get(`UPDATE album_metadata SET ${sets.join(', ')} WHERE id = ?`).run(...params, id);
 }
 
 /** 落库记录（FR-1/D2）：重复 → DuplicateRecordError（409 duplicate_record，ADR-007 条 2） */

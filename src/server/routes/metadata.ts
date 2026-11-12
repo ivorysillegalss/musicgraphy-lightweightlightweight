@@ -1,14 +1,24 @@
 // 元数据域路由（Hono 子应用，静态挂载不改 app 主体——拆分方案/PM §7.5）
+// GET /api/v1/search/albums（02 §4 / FR-1 输入端）：多源降级链搜索代理（Step 4）
+//   - ?q= 必带（≥2 字符）、?limit= 钳 1–25、?source= 可选（指定单源，默认走全链降级）
+//   - 限流（复审 V2）：全局串行队列 + 30/min → LocalRateLimitError → 429 + Retry-After（per-IP 弃用）
+//   - 全部上游失败 → 502 upstream_unavailable（主源错误优先透传 Retry-After）
+//   - 响应字段对齐 02 §2.1 + in_collection（FR-1 捷径③）；落库/归并细节见 metadata/search.ts
+// 注意：本域是"搜索外部源"；Collection 内检索走 collection/records 域的 q 参数。
 import { Hono } from 'hono';
 import type { DAO } from '../db/dao';
 import { errorBody } from '../http';
 import { LocalRateLimitError } from '../metadata/queue';
-import { UpstreamError, type AlbumCandidate, type MusicBrainzClient } from '../metadata/musicbrainz';
+import { UpstreamError } from '../metadata/musicbrainz';
+import { searchAlbums, type AlbumSearchItem } from '../metadata/search';
+import { SourceChain, type AlbumSource } from '../metadata/sources';
 
-export function metadataRoutes(dao: DAO, mb: MusicBrainzClient): Hono {
+const SOURCE_NAMES = new Set(['musicbrainz', 'deezer', 'itunes', 'discogs']);
+
+export function metadataRoutes(dao: DAO, sources: AlbumSource[]): Hono {
   const app = new Hono();
+  const chain = new SourceChain(sources);
 
-  // GET /api/v1/search/albums（02 §4 / FR-1 输入端）：外部源搜索代理 + 已收藏前置标记
   app.get('/search/albums', async (c) => {
     const q = (c.req.query('q') ?? '').trim();
     if (q.length < 2) {
@@ -16,10 +26,15 @@ export function metadataRoutes(dao: DAO, mb: MusicBrainzClient): Hono {
     }
     const limitRaw = Number(c.req.query('limit') ?? '12');
     const limit = Number.isFinite(limitRaw) ? Math.min(Math.max(Math.trunc(limitRaw), 1), 25) : 12;
+    const sourceRaw = (c.req.query('source') ?? '').trim();
+    if (sourceRaw !== '' && !SOURCE_NAMES.has(sourceRaw)) {
+      return c.json(errorBody('invalid_query', 'source 必须是 musicbrainz/deezer/itunes/discogs', { field: 'source' }), 422);
+    }
 
-    let candidates: AlbumCandidate[];
+    const picked = sourceRaw === '' ? chain : new SourceChain(sources.filter((s) => s.name === sourceRaw));
+    let items: AlbumSearchItem[];
     try {
-      candidates = await mb.searchReleases(q, limit);
+      items = await searchAlbums(dao, picked, q, limit);
     } catch (err) {
       if (err instanceof LocalRateLimitError) {
         return c.json(errorBody('rate_limited', '搜索过于频繁，请稍后再试', { retry_after_ms: err.retryAfterMs }), 429, {
@@ -32,11 +47,7 @@ export function metadataRoutes(dao: DAO, mb: MusicBrainzClient): Hono {
       }
       throw err;
     }
-
-    // FR-1 捷径③"已收藏前置标记"：候选阶段即标注已在 Collection，防止确认后才发现重复
-    const existing = dao.existingSourceIds('musicbrainz', candidates.map((x) => x.source_id));
-    for (const cand of candidates) cand.in_collection = existing.has(cand.source_id);
-    return c.json({ data: candidates });
+    return c.json({ data: items });
   });
 
   return app;

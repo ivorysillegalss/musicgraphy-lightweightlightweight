@@ -71,7 +71,7 @@ describe('P1-1 回响卡片（echo/today · 四约束）', () => {
     assert.equal(echo?.album.title, 'Echo One'); // added_at DESC → 最近周年优先
     const page = String(
       renderCollection(
-        { flash: null, dupHref: null, echo, filter: EMPTY_FILTER, counts: null, items: [], meta: { has_next: false, next_cursor: null }, total: 0, candidates: null, notice: null, topTags: [], error: null },
+        { flash: null, dupHref: null, echo, tagHint: null, filter: EMPTY_FILTER, counts: null, items: [], meta: { has_next: false, next_cursor: null }, total: 0, candidates: null, notice: null, topTags: [], error: null },
         { title: 't' }
       )
     );
@@ -84,7 +84,7 @@ describe('P1-1 回响卡片（echo/today · 四约束）', () => {
     const echo = dao.echoToday('local', 1)[0] ?? null;
     const page = String(
       renderCollection(
-        { flash: null, dupHref: null, echo, filter: EMPTY_FILTER, counts: null, items: [], meta: { has_next: false, next_cursor: null }, total: 0, candidates: null, notice: null, topTags: [], error: null },
+        { flash: null, dupHref: null, echo, tagHint: null, filter: EMPTY_FILTER, counts: null, items: [], meta: { has_next: false, next_cursor: null }, total: 0, candidates: null, notice: null, topTags: [], error: null },
         { title: 't' }
       )
     );
@@ -96,7 +96,7 @@ describe('P1-1 回响卡片（echo/today · 四约束）', () => {
   test('无则不显示：echo=null（无周年记录 / safeEcho 馈赠失败）→ 不渲染回响区', () => {
     const page = String(
       renderCollection(
-        { flash: null, dupHref: null, echo: null, filter: EMPTY_FILTER, counts: null, items: [], meta: { has_next: false, next_cursor: null }, total: 0, candidates: null, notice: null, topTags: [], error: null },
+        { flash: null, dupHref: null, echo: null, tagHint: null, filter: EMPTY_FILTER, counts: null, items: [], meta: { has_next: false, next_cursor: null }, total: 0, candidates: null, notice: null, topTags: [], error: null },
         { title: 't' }
       )
     );

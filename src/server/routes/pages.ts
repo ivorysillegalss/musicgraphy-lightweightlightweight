@@ -22,11 +22,12 @@
  */
 import { Hono } from 'hono';
 import type { Context } from 'hono';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import type { DAO } from '../db/dao';
 import { DuplicateRecordError, NotFoundError } from '../db/dao';
 import { nowIso } from '../db/sql';
 import type { AssociationItem } from '../db/associations';
-import type { CollectionItem } from '../db/types';
+import type { CollectionItem, MetricsCoverage } from '../db/types';
 import { errorStrip } from '../html';
 import { LocalRateLimitError } from '../metadata/queue';
 import { UpstreamError } from '../metadata/musicbrainz';
@@ -37,6 +38,7 @@ import type { RecordsRouteOptions } from './records';
 import { buildHref, cabinSection, parseFilter, renderCollection, resultsSection, toDaoFilters, type AxisCounts, type FilterState } from '../pages/collection';
 import { renderAlbumDetail, renderAlbumError, renderAlbumNotFound } from '../pages/album';
 import { renderAddPage } from '../pages/add';
+import { renderMetrics } from '../pages/metrics';
 import { searchSuggestFragment } from '../pages/suggest';
 
 const PAGE_LIMIT = 60; // ADR-005 内存纪律①：列表强制 LIMIT 60
@@ -312,6 +314,34 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
       /* 静默回详情 */
     }
     return c.redirect(`/album/${id}`, 303);
+  });
+
+  // ---------------------------------------------------------------- 观察池仪表页（W8：PRD §6 · 04B §3 自托管匿名计数、可关闭）
+
+  // 「可关闭」= 呈现级开关（cookie，无表无 JS）：关闭仅隐藏数字呈现，数据本身全部本地派生无外发
+  const METRICS_COOKIE = 'mg_metrics';
+  const QUARTER_MAX_AGE = 92 * 24 * 3600; // 季度级（与 P1-6 治理提示同节律）
+
+  app.get('/metrics', (c) => {
+    const closed = getCookie(c, METRICS_COOKIE) === 'closed';
+    let data: MetricsCoverage | null = null;
+    try {
+      data = dao.metricsCoverage(); // B3 域（02 §4 {data} 口径）；失败 → 页面 error 三态
+    } catch {
+      data = null;
+    }
+    return c.html(renderMetrics({ data, closed }, { title: 'Musicgraphy · 观察池仪表' }));
+  });
+
+  app.post('/metrics/toggle', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    if (b['action'] === 'close') {
+      setCookie(c, METRICS_COOKIE, 'closed', { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: QUARTER_MAX_AGE });
+    } else {
+      deleteCookie(c, METRICS_COOKIE, { path: '/' });
+    }
+    return c.redirect('/metrics', 303);
   });
 
   return app;

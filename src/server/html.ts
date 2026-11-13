@@ -106,10 +106,24 @@ ${css === null ? html`${raw('<!-- [assets] vite 产物缺失：npm run build 后
 </head>
 <body>
 ${opts.body}
+${siteFooter()}
 <div data-island="keyboard-flow" hidden aria-hidden="true"></div>
 ${js === null ? '' : html`<script type="module" src="${js}"></script>`}
 </body>
 </html>`;
+}
+
+// ---------------------------------------------------------------- 页脚（P1-3 导出入口 · PRD §6 观察池仪表；样式内联零 CSS 增量——IM-14 预算观察项）
+
+/** 数据主权入口（永久免费红线）+ 观察池仪表入口（04B §3：自托管匿名计数、可关闭）。 */
+export function siteFooter(): HtmlEscapedString {
+  return html`<footer class="site-footer" style="border-top:1px solid var(--color-border); margin-top:var(--space-2xl); padding:var(--space-lg) var(--space-lg) var(--space-3xl); display:flex; flex-wrap:wrap; gap:var(--space-md); align-items:baseline; color:var(--color-muted-foreground);">
+  <span class="small">你的档案，随时带得走（永久免费）：</span>
+  <a class="btn-text" href="/api/v1/export?format=json">导出 JSON</a>
+  <a class="btn-text" href="/api/v1/export?format=csv">导出 CSV</a>
+  <a class="btn-text" href="/api/v1/export?with_covers=1">含封面 zip</a>
+  <span class="small" style="margin-left:auto;"><a class="btn-text" href="/metrics">观察池仪表</a></span>
+</footer>`;
 }
 
 // ---------------------------------------------------------------- 页头（C-SEARCH 双意图 + 添加入口；弹层标记由 pages/adddialog 提供）

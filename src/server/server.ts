@@ -9,7 +9,7 @@ import { createApp } from './app';
 import { MetadataRateLimiter } from './metadata/queue';
 import { MusicBrainzClient } from './metadata/musicbrainz';
 import { DeezerSource, DiscogsSource, ITunesSource, MusicBrainzSource, type AlbumSource } from './metadata/sources';
-import { downloadCover } from './metadata/covers';
+import { CoverGate } from './metadata/cover-gate';
 
 const cfg = loadConfig();
 ensureDirs(cfg);
@@ -32,11 +32,14 @@ const sources: AlbumSource[] = [
 
 // Step 2（F3）：落库后异步封面落盘——不阻塞响应，失败仅日志（重加同专辑可补）。
 // Step 4：文件名 = 内容 sha256（covers.ts），懒下载路由（/covers/a/:id）为兜底入口。
+// IM-22 R3：钩子与懒下载同走封面门（single-flight 同封面合并 + 独立「串行 ≥1s + 在途 ≤2」，
+// 评审案 Q2——不占搜索 30/min 窗）；R4 回填经 downloadBackfill 空闲门注入（交互优先）。
+const coverGate = new CoverGate();
 const onAlbumAdded = (albumId: string, _sourceId: string, coverUrl: string | null): void => {
   if (coverUrl === null) return;
   void (async () => {
     try {
-      const filename = await downloadCover({ coverUrl, coversDir: cfg.coversDir, userAgent: cfg.userAgent });
+      const filename = await coverGate.download({ coverUrl, coversDir: cfg.coversDir, userAgent: cfg.userAgent });
       dao.setAlbumCoverLocal(albumId, filename);
       logger.info('covers', 'cover saved', { albumId, filename });
     } catch (err) {
@@ -45,7 +48,7 @@ const onAlbumAdded = (albumId: string, _sourceId: string, coverUrl: string | nul
   })();
 };
 
-const app = createApp(dao, cfg, sources, { onAlbumAdded });
+const app = createApp(dao, cfg, sources, { onAlbumAdded, cover: { gate: coverGate } });
 
 // 备份（R1/V14）：启动时 + 每日定时；按天去重，保留 7 天；失败不阻塞
 try {

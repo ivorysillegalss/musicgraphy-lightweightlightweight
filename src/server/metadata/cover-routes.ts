@@ -6,19 +6,26 @@
 //                              之后同 URL 仅一次 DAO 读 + 302，字节请求由 immutable 缓存承接。
 // 内存纪律：文件内容从不整体读入内存（ReadableStream 直通），无 base64。
 // 鉴权豁免（V10）：封面须被 <img> 直接引用，与 /static 同列公开资源。
+// IM-22 R3：懒下载与 onAlbumAdded 钩子同走封面门（cover-gate.ts）——single-flight 同封面
+// 合并 + 独立「串行 ≥1s + 在途 ≤2」门（不占搜索 30/min 窗）；gate 未注入时的缺省门为零
+// 间距（测试便利，保 single-flight 语义），生产 server.ts 必须接线真实门。
 import { Hono } from 'hono';
 import type { DAO } from '../db/dao';
 import { logger } from '../logger';
-import { CoverDownloadError, downloadCover, serveCoverFile } from './covers';
+import { CoverGate } from './cover-gate';
+import { CoverDownloadError, serveCoverFile } from './covers';
 
 export interface CoverRouteOptions {
   coversDir: string;
   userAgent: string;
   fetchFn?: typeof fetch;
+  /** 封面门（IM-22 R3）；缺省 = 零间距门（仅测试路径） */
+  gate?: CoverGate;
 }
 
 export function coverRoutes(dao: DAO, opts: CoverRouteOptions): Hono {
   const app = new Hono();
+  const gate = opts.gate ?? new CoverGate({ minIntervalMs: 0 });
 
   // 内容寻址命中（含 Step 2 遗留 sha1(source_id) 文件名）
   app.get('/:file', (c) => {
@@ -35,7 +42,7 @@ export function coverRoutes(dao: DAO, opts: CoverRouteOptions): Hono {
     if (album.cover_url === null) return c.text('not found', 404);
     let filename: string;
     try {
-      filename = await downloadCover({ coverUrl: album.cover_url, coversDir: opts.coversDir, userAgent: opts.userAgent, fetchFn: opts.fetchFn });
+      filename = await gate.download({ coverUrl: album.cover_url, coversDir: opts.coversDir, userAgent: opts.userAgent, fetchFn: opts.fetchFn });
     } catch (err) {
       logger.warn('covers', 'lazy cover download failed', { albumId: album.id, err: String(err) });
       const status = err instanceof CoverDownloadError ? 502 : 500;

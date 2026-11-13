@@ -31,13 +31,16 @@ const MIME_BY_EXT: Record<string, string> = {
   '.gif': 'image/gif'
 };
 
-export async function downloadCover(opts: {
+/** 下载参数（IM-22 R3 抽出共享：cover-gate.ts 的 download()/downloadBackfill() 同型透传） */
+export interface CoverDownloadOptions {
   coverUrl: string;
   coversDir: string;
   userAgent: string;
   fetchFn?: typeof fetch;
   maxBytes?: number;
-}): Promise<string> {
+}
+
+export async function downloadCover(opts: CoverDownloadOptions): Promise<string> {
   const fetchFn = opts.fetchFn ?? fetch;
   const max = opts.maxBytes ?? 5 * 1024 * 1024;
 

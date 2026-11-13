@@ -12,6 +12,7 @@ import { metricsRoutes } from './routes/metrics';
 import { savedViewRoutes } from './routes/views';
 import { pagesRoutes } from './routes/pages';
 import { coverRoutes } from './metadata/cover-routes';
+import type { CoverGate } from './metadata/cover-gate';
 import { SourceChain, type AlbumSource } from './metadata/sources';
 
 export type AppOptions = RecordsRouteOptions & {
@@ -19,6 +20,8 @@ export type AppOptions = RecordsRouteOptions & {
   cover?: {
     coversDir?: string;
     fetchFn?: typeof fetch;
+    /** 封面门（IM-22 R3：single-flight + 独立串行门）；server.ts 接线共享实例，缺省 = 零间距门（测试） */
+    gate?: CoverGate;
   };
 };
 
@@ -34,7 +37,8 @@ export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: A
     coverRoutes(dao, {
       coversDir: opts.cover?.coversDir ?? cfg.coversDir,
       userAgent: cfg.userAgent,
-      fetchFn: opts.cover?.fetchFn
+      fetchFn: opts.cover?.fetchFn,
+      gate: opts.cover?.gate
     })
   );
 

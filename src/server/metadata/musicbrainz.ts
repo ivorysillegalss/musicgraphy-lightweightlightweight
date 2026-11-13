@@ -72,6 +72,13 @@ export class MusicBrainzClient {
       return (body?.releases ?? []).map(mapRelease);
     });
   }
+
+  /** 按 artist+title 精确解析（B7 按需权威化）：引号剥除防查询语法注入；top-1 = MB 相关度最高命中 */
+  async resolveReleaseByArtistAndTitle(artist: string, title: string): Promise<AlbumCandidate | null> {
+    const q = `artist:"${artist.replace(/"/g, '')}" AND release:"${title.replace(/"/g, '')}"`;
+    const hits = await this.searchReleases(q, 1);
+    return hits[0] ?? null;
+  }
 }
 
 function mapRelease(r: MbRelease): AlbumCandidate {

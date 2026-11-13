@@ -6,7 +6,8 @@ import { logger } from '../logger';
 import { UpstreamError, type AlbumCandidate } from './musicbrainz';
 import { LocalRateLimitError } from './queue';
 
-export type MetadataSource = 'musicbrainz' | 'deezer' | 'itunes' | 'discogs' | 'user-provided';
+// 'netease'（IM-23）：仅导入域（metadata/netease.ts CLI 直建行），不在 SourceChain 搜索链上
+export type MetadataSource = 'musicbrainz' | 'deezer' | 'itunes' | 'discogs' | 'user-provided' | 'netease';
 
 /** 队列的结构化最小面（测试可注入桩；MetadataRateLimiter 天然满足） */
 export interface RateLimiterLike {

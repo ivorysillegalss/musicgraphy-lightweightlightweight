@@ -92,3 +92,13 @@ export const SQL_TAG_GOV =
 // 命名视图创建密度（P1-10 → PRD §6 named_view_rate「周人均新建数」）：总数 + 首建时间（存活周数分母）
 export const SQL_NAMED_VIEW =
   'SELECT COUNT(*) AS cnt, MIN(created_at) AS first_at FROM saved_views WHERE user_id = ?';
+
+// Topster 策展域（W10-12-1 W10 批；域文件 db/topster.ts 用；02-变现文档包 02 §6 预留位；
+// 评审案 docs/topster-review.md Q3，用户 2026-11-14 AskUserQuestion 批准）。item_order 只存
+// collection_record.id 引用（Collection 一种 View，禁第二套数据）；成员取数须按 item_order 重排
+// ——策展顺序是用户事实不是元数据事实，故 SQL 不含 ORDER BY 语义排序（域文件 JS 重排）。
+export const SQL_TOPSTER_LIST =
+  'SELECT id, title, subtitle, item_order, created_at FROM topster_views WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT 100';
+
+export const SQL_TOPSTER_BY_ID =
+  'SELECT id, title, subtitle, item_order, created_at FROM topster_views WHERE id = ? AND user_id = ?';

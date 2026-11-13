@@ -251,15 +251,15 @@ describe('B5 网易云导入器（IM-23）', () => {
       rmSync(dir, { recursive: true, force: true });
     });
 
-    test('存量库应用 0003：数据保真 + CHECK 扩展生效 + FK 基线恢复 + user_version=3', () => {
-      const applied = runMigrations(db, 'db/migrations'); // 只新增 0003
-      assert.equal(applied, 1);
+    test('存量库应用 0003：数据保真 + CHECK 扩展生效 + FK 基线恢复 + user_version 推进（目录动态适配）', () => {
+      const applied = runMigrations(db, 'db/migrations'); // 待应用 = 0003 起全部（目录共享：后续卡迁移如 0004 一并应用。2026-11-14 W10 批最小修复 = 挡共享门禁：原写死 =1/uv=3 与「目录只新增 0003」时点耦合，0004 落目录即红；数据保真/CHECK/FK/子表 REFERENCES 断言全部不动 = 本测试核心价值）
+      assert.ok(applied >= 1);
       dao = new DAO(db); // 重建后换新 DAO（语句缓存与新 schema 对齐）
       const rows = dao.listPage({ limit: 60 });
       assert.equal(rows.items.length, 1);
       assert.equal(rows.items[0]?.album.title, 'Blue Train');
       assert.equal(rows.items[0]?.note, '迁移保真锚');
-      assert.equal(Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version), 3);
+      assert.equal(Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version), 2 + applied); // uv=2 存量库起推进 applied 个迁移
       assert.equal(Number((db.prepare('PRAGMA foreign_keys').get() as { foreign_keys: number }).foreign_keys), 1, '迁移窗口结束 FK=ON 恢复');
       // 新枚举可写；旧 CHECK 不放行的值仍拒绝
       const { id: nid } = dao.upsertAlbum({ source: 'netease', source_id: 'ne-1', title: 'NE 专辑', artist: 'NE Artist' });

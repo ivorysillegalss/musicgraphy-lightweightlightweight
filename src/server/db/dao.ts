@@ -27,6 +27,7 @@ import * as assoc from './associations';
 import * as metrics from './metrics';
 import * as taggov from './taggov';
 import * as writes from './writes';
+import * as topster from './topster';
 
 export { DuplicateRecordError, NotFoundError, CursorInvalidError } from './errors';
 export { parseGenres, asNumN, asStrN, asBool } from './types';
@@ -175,4 +176,17 @@ export class DAO {
     writes.updateRecord(this.st, id, patch, userId);
   setTags = (recordId: string, names: string[], userId = 'local'): string[] => writes.setTags(this.db, this.st, recordId, names, userId);
   setAlbumCoverLocal = (albumId: string, filename: string | null): void => writes.setAlbumCoverLocal(this.st, albumId, filename);
+
+  // Topster 策展域（W10-12-1 W10 批；实现见 topster.ts；评审案 docs/topster-review.md——域文件委托先例 = savedviews/assoc/taggov）
+  listTopsters = (userId = 'local'): topster.TopsterMeta[] => topster.listTopsters(this.st, userId);
+  getTopster = (id: string, userId = 'local'): topster.TopsterMeta | undefined => topster.getTopster(this.st, id, userId);
+  createTopster = (title: string, subtitle: string | null, userId = 'local'): { id: string } => topster.createTopster(this.st, title, subtitle, userId);
+  updateTopsterMeta = (id: string, title: string, subtitle: string | null, userId = 'local'): void => topster.updateTopsterMeta(this.st, id, title, subtitle, userId);
+  deleteTopster = (id: string, userId = 'local'): void => topster.deleteTopster(this.st, id, userId);
+  topsterItems = (recordIds: string[], userId = 'local'): { items: CollectionItem[]; missing: number } => topster.topsterItems(this.st, recordIds, userId);
+  addTopsterMember = (id: string, recordId: string, userId = 'local'): topster.MemberOpResult => topster.addTopsterMember(this.st, id, recordId, userId);
+  removeTopsterMember = (id: string, recordId: string, userId = 'local'): topster.MemberOpResult => topster.removeTopsterMember(this.st, id, recordId, userId);
+  moveTopsterMember = (id: string, recordId: string, dir: 'up' | 'down', userId = 'local'): topster.MemberOpResult =>
+    topster.moveTopsterMember(this.st, id, recordId, dir, userId);
+  memberCandidates = (id: string, q: string, userId = 'local'): CollectionItem[] => topster.memberCandidates(this.st, id, q, userId);
 }

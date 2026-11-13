@@ -39,6 +39,8 @@ import { buildHref, cabinSection, parseFilter, queryJsonToFilter, renderCollecti
 import { renderAlbumDetail, renderAlbumError, renderAlbumNotFound } from '../pages/album';
 import { renderAddPage } from '../pages/add';
 import { renderMetrics } from '../pages/metrics';
+import { renderTopsterDetail, renderTopsterList } from '../pages/topster';
+import * as topster from '../db/topster';
 import { searchSuggestFragment } from '../pages/suggest';
 
 const PAGE_LIMIT = 60; // ADR-005 内存纪律①：列表强制 LIMIT 60
@@ -416,6 +418,120 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
       }
     }
     return c.redirect('/', 303);
+  });
+
+  // ---------------------------------------------------------------- Topster 策展页（W10-12-1 W10 批；评审案 docs/topster-review.md Q5/Q7，
+  // 用户 2026-11-14 AskUserQuestion 批准实现。Topster = Collection 的一种 View：成员实时取自 collection_record，
+  // item_order 只存引用（禁第二套数据）；策展仅限顺序+副标题（禁自由画布）。无 JS 基线：POST 全部 303；
+  // 校验失败 → 303 ?flash=error（数据不变，页面红条如实反馈——views 页面通道静默先例 + flashBanner 语义）
+
+  app.get('/topsters', (c) => {
+    let topsters: topster.TopsterMeta[] | null = null;
+    try {
+      topsters = dao.listTopsters();
+    } catch {
+      topsters = null;
+    }
+    const flash = searchParams(c).get('flash') === 'error' ? 'error' : null;
+    return c.html(renderTopsterList({ topsters, flash }, { title: 'Musicgraphy · Topster 策展' }));
+  });
+
+  app.post('/topsters', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const title = typeof b['title'] === 'string' ? b['title'].trim() : '';
+    const subtitle = typeof b['subtitle'] === 'string' && b['subtitle'].trim() !== '' ? b['subtitle'].trim() : null;
+    if (title === '' || title.length > topster.TITLE_MAX || (subtitle !== null && subtitle.length > topster.SUBTITLE_MAX)) {
+      return c.redirect('/topsters?flash=error', 303); // 空标题由 HTML required 前置挡，此处服务端兜底（数据不变）
+    }
+    const { id } = dao.createTopster(title, subtitle);
+    return c.redirect(`/topsters/${id}`, 303);
+  });
+
+  app.get('/topsters/:id', (c) => {
+    const id = c.req.param('id');
+    const t = dao.getTopster(id);
+    if (t === undefined) return c.html(renderAlbumNotFound(id, { title: 'Musicgraphy · 策展不存在' }), 404); // 404 语义同 /album/:id 先例
+    const p = searchParams(c);
+    const ids = topster.parseItemOrder(t.item_order) ?? [];
+    let items: CollectionItem[] = [];
+    let missing = 0;
+    let addCandidates: CollectionItem[] = [];
+    let addNotice: string | null = null;
+    try {
+      const loaded = dao.topsterItems(ids);
+      items = loaded.items;
+      missing = loaded.missing;
+    } catch {
+      items = [];
+    }
+    const addQ = (p.get('add_q') ?? '').trim();
+    if (addQ.length >= 1) {
+      try {
+        addCandidates = dao.memberCandidates(id, addQ);
+        if (addCandidates.length === 0) addNotice = `档案中没有匹配「${addQ}」且未加入本策展的记录。`;
+      } catch {
+        addCandidates = [];
+      }
+    }
+    const flash = p.get('flash') === 'error' ? 'error' : null;
+    return c.html(renderTopsterDetail({ t, items, missing, addCandidates, addNotice, flash }, { title: `Musicgraphy · ${t.title}` }));
+  });
+
+  app.post('/topsters/:id/update', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const title = typeof b['title'] === 'string' ? b['title'].trim() : '';
+    const subtitle = typeof b['subtitle'] === 'string' && b['subtitle'].trim() !== '' ? b['subtitle'].trim() : null;
+    if (title === '' || title.length > topster.TITLE_MAX || (subtitle !== null && subtitle.length > topster.SUBTITLE_MAX)) {
+      return c.redirect(`/topsters/${c.req.param('id')}?flash=error`, 303);
+    }
+    try {
+      dao.updateTopsterMeta(c.req.param('id'), title, subtitle); // 不存在 → NotFoundError 捕获静默（幂等语义）
+    } catch {
+      /* 静默 */
+    }
+    return c.redirect(`/topsters/${c.req.param('id')}`, 303);
+  });
+
+  app.post('/topsters/:id/members', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const recordId = typeof b['record_id'] === 'string' ? b['record_id'] : '';
+    const op = recordId === '' ? 'no_change' : dao.addTopsterMember(c.req.param('id'), recordId);
+    // added 以外（full/duplicate/invalid_record/not_found）→ 数据不变 + 诚实红条；不静默伪造成功
+    return c.redirect(`/topsters/${c.req.param('id')}${op === 'added' ? '' : '?flash=error'}`, 303);
+  });
+
+  app.post('/topsters/:id/move', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const recordId = typeof b['record_id'] === 'string' ? b['record_id'] : '';
+    const dir = b['dir'] === 'down' ? 'down' : 'up';
+    if (recordId !== '') dao.moveTopsterMember(c.req.param('id'), recordId, dir); // 越界/不在列 → no_change（幂等 303）
+    return c.redirect(`/topsters/${c.req.param('id')}`, 303);
+  });
+
+  app.post('/topsters/:id/remove', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const recordId = typeof b['record_id'] === 'string' ? b['record_id'] : '';
+    if (recordId !== '') dao.removeTopsterMember(c.req.param('id'), recordId); // 不在列 → no_change（幂等 303）
+    return c.redirect(`/topsters/${c.req.param('id')}`, 303);
+  });
+
+  app.post('/topsters/delete', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const topsterId = typeof b['topster_id'] === 'string' ? b['topster_id'] : '';
+    if (topsterId !== '') {
+      try {
+        dao.deleteTopster(topsterId);
+      } catch {
+        /* 不存在/失败静默（删除请求幂等，/views/delete 先例） */
+      }
+    }
+    return c.redirect('/topsters', 303);
   });
 
   // ---------------------------------------------------------------- 观察池仪表页（W8：PRD §6 · 04B §3 自托管匿名计数、可关闭）

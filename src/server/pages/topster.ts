@@ -9,6 +9,7 @@ import { parseItemOrder, type TopsterMeta } from '../db/topster';
 import type { CollectionItem } from '../db/types';
 import { coverWallCards, emptyWall, errorStrip, siteHeader, type LayoutOptions, layout } from '../html';
 import { wallCard } from './collection';
+import { topsterSvgSignature } from './topster-svg';
 
 export type Esc = ReturnType<typeof html>;
 
@@ -97,6 +98,11 @@ export function renderTopsterDetail(
   <h1 style="font-family:var(--font-display); font-size:28px; margin-bottom:2px;">${d.t.title}</h1>
   ${d.t.subtitle === null ? '' : html`<p style="color:var(--color-muted-foreground); margin:0 0 6px;">${d.t.subtitle}</p>`}
   <p class="mono small" style="color:var(--color-muted-foreground);">ORDER IS THE STORY · ${String(ids.length)}/60 张${d.missing > 0 ? html` · 清单中 ${String(d.missing)} 处引用的记录已不在档案` : ''}</p>
+  ${
+    ids.length === 0
+      ? ''
+      : html`<p class="small" style="margin:0 0 6px;"><a class="btn-text" href="${base}/export.svg">导出 SVG 图片</a> · <a class="btn-text" href="${base}/poster">海报页（截图即成图）</a><span class="small" style="color:var(--color-muted-foreground);">——分享的是作品图，署名已内嵌</span></p>`
+  }
   ${d.flash === 'error' ? errorStrip('操作未生效——容量已满（60 张）、记录已不在档案或已在策展中。') : ''}
 
   ${
@@ -133,6 +139,28 @@ export function renderTopsterDetail(
     </form>
     <div style="margin-top:var(--space-md);">${actionForm('/topsters/delete', { topster_id: d.t.id }, '删除此策展', 'btn-text')}</div>
   </div>
+</main>`;
+  return layout({ ...layoutOpts, body });
+}
+
+/**
+ * 海报页（W11 批案 C，评审案 §3，用户批准 A+C 组合）：cover-first 大网格 + 标题/副标题 + 署名页脚，
+ * 无编辑区——用户全屏截图/系统打印即成图（主流平台不收 SVG 上传的现实分享路径补位，零依赖）。
+ */
+export function renderTopsterPoster(
+  d: { t: TopsterMeta; items: CollectionItem[] },
+  layoutOpts: Omit<LayoutOptions, 'body'>
+): Esc {
+  const body = html`<main style="max-width:1040px; margin:0 auto; padding-top:var(--space-xl);">
+  <h1 style="font-family:var(--font-display); font-size:34px; margin-bottom:2px;">${d.t.title}</h1>
+  ${d.t.subtitle === null ? '' : html`<p style="font-size:18px; color:var(--color-muted-foreground); margin:0 0 4px;">${d.t.subtitle}</p>`}
+  <p class="mono small" style="color:var(--color-muted-foreground);">ORDER IS THE STORY · ${String(d.items.length)} 张</p>
+  ${
+    d.items.length === 0
+      ? emptyWall('空策展——先回策展页加几张专辑再来导出。')
+      : html`<div style="margin-top:var(--space-lg);">${coverWallCards(d.items.map((it) => wallCard(it)))}</div>`
+  }
+  <p class="small" style="color:var(--color-muted-foreground); margin-top:var(--space-xl);">${topsterSvgSignature}</p>
 </main>`;
   return layout({ ...layoutOpts, body });
 }

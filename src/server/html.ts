@@ -113,9 +113,14 @@ ${js === null ? '' : html`<script type="module" src="${js}"></script>`}
 </html>`;
 }
 
-// ---------------------------------------------------------------- 页脚（P1-3 导出入口 · PRD §6 观察池仪表；样式内联零 CSS 增量——IM-14 预算观察项）
+// ---------------------------------------------------------------- 页脚（P1-3 导出入口 · PRD §6 观察池仪表 · W11 赞助插座；样式内联零 CSS 增量——IM-14 预算观察项）
 
-/** 数据主权入口（永久免费红线）+ 观察池仪表入口（04B §3：自托管匿名计数、可关闭）。 */
+/**
+ * 数据主权入口（永久免费红线）+ 观察池仪表入口（04B §3：自托管匿名计数、可关闭）
+ * + 赞助插座（W11 批，W10-12-1；04B §4 常设插座：一行字姿态——零打扰、无弹窗、无进度条、无目标金额公示）。
+ * ⚠️ 链接 href="#" 为占位：上线前由用户替换为 GitHub Sponsors / 爱发电真实链接（发布物料包登记项，
+ * agent 备料不代发——用户 2026-11-14 裁决「landing 上线与全渠道发布 = 用户亲手」同款纪律）。
+ */
 export function siteFooter(): HtmlEscapedString {
   return html`<footer class="site-footer" style="border-top:1px solid var(--color-border); margin-top:var(--space-2xl); padding:var(--space-lg) var(--space-lg) var(--space-3xl); display:flex; flex-wrap:wrap; gap:var(--space-md); align-items:baseline; color:var(--color-muted-foreground);">
   <span class="small">你的档案，随时带得走（永久免费）：</span>
@@ -123,6 +128,7 @@ export function siteFooter(): HtmlEscapedString {
   <a class="btn-text" href="/api/v1/export?format=csv">导出 CSV</a>
   <a class="btn-text" href="/api/v1/export?with_covers=1">含封面 zip</a>
   <span class="small" style="margin-left:auto;"><a class="btn-text" href="/metrics">观察池仪表</a></span>
+  <span class="small" style="flex-basis:100%;">Musicgraphy 永远免费。如果它帮到了你，<a class="btn-text" href="#" title="上线前由站长配置 GitHub Sponsors / 爱发电链接">请我喝杯咖啡</a>。</span>
 </footer>`;
 }
 

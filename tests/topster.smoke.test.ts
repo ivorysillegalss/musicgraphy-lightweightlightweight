@@ -254,4 +254,61 @@ describe('Topster 页面通道（无 JS 基线 · POST+303）', () => {
     assert.ok(html.includes('此记录已不在档案'));
     dao.deleteTopster(tid);
   });
+
+  test('策展页导出入口：SVG 附件链接 + 海报页链接在场（有成员才显示）', async () => {
+    const html = await (await get(`/topsters/${topsterId}`)).text();
+    assert.ok(html.includes('export.svg')); // 案 A 入口
+    assert.ok(html.includes('/poster')); // 案 C 入口
+    const empty = dao.createTopster('空策展导出隐藏', null);
+    const emptyHtml = await (await get(`/topsters/${empty.id}`)).text();
+    assert.ok(!emptyHtml.includes('export.svg')); // 空策展无导出入口
+    dao.deleteTopster(empty.id);
+  });
+
+  test('W11 案 A：export.svg 零依赖纯文本——XML 声明 + 署名内嵌 + attachment + 用户输入 XML 转义 + 封面 URL 引用（origin 拼接）', async () => {
+    const evil = seedRecord('<恶意&标题>');
+    // 带 cover_local 的成员：验证本地缓存封面拼 origin（脱离服务器后按部署地址加载，评审案 §3）
+    seq++;
+    const { id: covAlbum } = dao.upsertAlbum({ source: 'user-provided', source_id: `topster-cov-${String(seq)}`, title: '有封面的', artist: '艺术家', genres: [] });
+    const covRec = dao.createRecord({ album_id: covAlbum });
+    dao.setAlbumCoverLocal(covAlbum, 'abc123.jpg');
+    const tid = dao.createTopster('转义<title>&测试', '副标题 "引号"').id;
+    dao.addTopsterMember(tid, evil);
+    dao.addTopsterMember(tid, covRec.id);
+    const res = await get(`/topsters/${tid}/export.svg`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') ?? '', /image\/svg\+xml/);
+    assert.match(res.headers.get('content-disposition') ?? '', /attachment/); // 导出语义
+    const svg = await res.text();
+    assert.ok(svg.startsWith('<?xml version="1.0" encoding="UTF-8"?>'));
+    assert.ok(svg.includes('made with Musicgraphy')); // 署名内嵌（04B 引擎一）
+    assert.ok(svg.includes('ORDER IS THE STORY'));
+    assert.ok(!svg.includes('<恶意&标题>')); // 用户输入零 raw 插入（hono/html 同款纪律的 SVG 等价）
+    assert.ok(svg.includes('&lt;恶意&amp;标题&gt;')); // escapeXml 落实
+    assert.ok(!svg.includes('副标题 "引号"')); // 副标题引号同样转义
+    assert.ok(svg.includes('&quot;引号&quot;'));
+    assert.equal((svg.match(/<image /g) ?? []).length, 1); // 2 成员中 1 个有 cover_local → 1 个 image
+    assert.ok(svg.includes('href="http://localhost/covers/abc123.jpg"')); // 本地封面 origin 拼接
+    assert.ok(!svg.includes('data:image')); // 禁 base64 纪律②③（URL 引用不内嵌像素）
+    assert.equal((svg.match(/<rect[^>]*fill="#8a8580"/g) ?? []).length, 2); // fallback 色块分层每成员一块（封面加载失败/无封面兜底）
+    dao.deleteTopster(tid);
+  });
+
+  test('W11 案 C：海报页渲染——署名页脚 + 网格 + 无编辑区（截图即成图）', async () => {
+    const res = await get(`/topsters/${topsterId}/poster`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.ok(html.includes('页面策展')); // 标题
+    assert.ok(html.includes('made with Musicgraphy')); // 署名页脚
+    assert.ok(html.includes('cover-wall')); // 大网格
+    assert.ok(!html.includes('name="add_q"')); // 无搜索加入区
+    assert.ok(!html.includes(`action="/topsters/${topsterId}/move"`)); // 无编辑区（↑↓）
+  });
+
+  test('W11 导出 404：不存在的策展 → 404 页面语义（同 /album/:id 先例）', async () => {
+    const svg = await get('/topsters/no-such-id/export.svg');
+    assert.equal(svg.status, 404);
+    const poster = await get('/topsters/no-such-id/poster');
+    assert.equal(poster.status, 404);
+  });
 });

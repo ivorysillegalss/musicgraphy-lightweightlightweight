@@ -39,7 +39,8 @@ import { buildHref, cabinSection, parseFilter, queryJsonToFilter, renderCollecti
 import { renderAlbumDetail, renderAlbumError, renderAlbumNotFound } from '../pages/album';
 import { renderAddPage } from '../pages/add';
 import { renderMetrics } from '../pages/metrics';
-import { renderTopsterDetail, renderTopsterList } from '../pages/topster';
+import { renderTopsterDetail, renderTopsterList, renderTopsterPoster } from '../pages/topster';
+import { buildTopsterSvg } from '../pages/topster-svg';
 import * as topster from '../db/topster';
 import { searchSuggestFragment } from '../pages/suggest';
 
@@ -476,6 +477,39 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     }
     const flash = p.get('flash') === 'error' ? 'error' : null;
     return c.html(renderTopsterDetail({ t, items, missing, addCandidates, addNotice, flash }, { title: `Musicgraphy · ${t.title}` }));
+  });
+
+  // W11 批导出（评审案 §3 案 A，用户批准 A+C 组合）：SVG 纯文本零依赖（零新包 G1、禁 base64——封面 URL 引用）；
+  // 署名 "made with Musicgraphy" 内嵌 = 04B 引擎一。诚实边界已披露：主流平台不收 SVG 上传 → 案 C 海报页补位。
+  app.get('/topsters/:id/export.svg', (c) => {
+    const t = dao.getTopster(c.req.param('id'));
+    if (t === undefined) return c.html(renderAlbumNotFound(c.req.param('id'), { title: 'Musicgraphy · 策展不存在' }), 404);
+    const ids = topster.parseItemOrder(t.item_order) ?? [];
+    let items: CollectionItem[] = [];
+    try {
+      items = dao.topsterItems(ids).items; // 失效引用按实际在场成员导出（missing 不进图）
+    } catch {
+      items = [];
+    }
+    const origin = new URL(c.req.url).origin; // 本地缓存封面拼绝对地址（脱离服务器后按部署地址加载）
+    return c.body(buildTopsterSvg(t, items, origin), 200, {
+      'Content-Type': 'image/svg+xml; charset=utf-8',
+      'Content-Disposition': `attachment; filename="topster-${t.id.slice(0, 8)}.svg"` // 导出语义（W10 评审案 Q5）
+    });
+  });
+
+  // W11 批案 C：海报页——cover-first 大网格 + 署名，无编辑区，用户截图/系统打印即成图（零依赖零红线冲突）
+  app.get('/topsters/:id/poster', (c) => {
+    const t = dao.getTopster(c.req.param('id'));
+    if (t === undefined) return c.html(renderAlbumNotFound(c.req.param('id'), { title: 'Musicgraphy · 策展不存在' }), 404);
+    const ids = topster.parseItemOrder(t.item_order) ?? [];
+    let items: CollectionItem[] = [];
+    try {
+      items = dao.topsterItems(ids).items;
+    } catch {
+      items = [];
+    }
+    return c.html(renderTopsterPoster({ t, items }, { title: `Musicgraphy · ${t.title}` }));
   });
 
   app.post('/topsters/:id/update', async (c) => {

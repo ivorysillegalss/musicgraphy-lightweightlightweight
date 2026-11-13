@@ -25,6 +25,7 @@ import type { Context } from 'hono';
 import type { DAO } from '../db/dao';
 import { DuplicateRecordError, NotFoundError } from '../db/dao';
 import { nowIso } from '../db/sql';
+import type { AssociationItem } from '../db/associations';
 import type { CollectionItem } from '../db/types';
 import { errorStrip } from '../html';
 import { LocalRateLimitError } from '../metadata/queue';
@@ -53,6 +54,15 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
       return dao.echoToday('local', 1)[0] ?? null;
     } catch {
       return null; // 回响是馈赠：失败静默不渲染（P1-1）
+    }
+  };
+
+  // P1-5 联想是馈赠：失败静默降级为不渲染（同上 P1-1 四约束；B1 接线披露件，评审案 docs/associations-review.md §6）
+  const safeAssociations = (id: string): AssociationItem[] | undefined => {
+    try {
+      return dao.getAssociations(id, 18);
+    } catch {
+      return undefined;
     }
   };
 
@@ -249,7 +259,7 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     const flash = c.req.query('flash') === 'duplicate' ? 'duplicate' : null;
     try {
       const detail = dao.getRecord(id);
-      return c.html(renderAlbumDetail(detail, flash, { title: `Musicgraphy · ${detail.album.title}` }), 200);
+      return c.html(renderAlbumDetail(detail, flash, { title: `Musicgraphy · ${detail.album.title}` }, safeAssociations(id)), 200);
     } catch (err) {
       if (err instanceof NotFoundError) {
         return c.html(renderAlbumNotFound(id, { title: 'Musicgraphy · 未找到' }), 404);

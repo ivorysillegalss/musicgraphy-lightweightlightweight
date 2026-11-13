@@ -1,8 +1,26 @@
 import type { Db } from './connection';
-import { buildWhere, decodeCursor, encodeCursor, escapeLike, normalizeTag, SORTS, StmtCache, type Cell, type Filters, type Row } from './sql';
-import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_ECHO, SQL_RECORD_TAGS } from './queries';
+import { buildWhere, decodeCursor, encodeCursor, escapeLike, normalizeTag, nowIso, SORTS, StmtCache, type Cell, type Filters, type Row } from './sql';
+import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_ECHO, SQL_EXPORT, SQL_EXPORT_TAGS, SQL_RECORD_TAGS, SQL_STATS } from './queries';
 import { CursorInvalidError, NotFoundError } from './errors';
-import { asStr, cell, mapAlbum, mapItem, type AlbumRow, type AxisCounts, type CollectionDetail, type CollectionItem, type FacetCount, type Stats } from './types';
+import {
+  asBool,
+  asNumN,
+  asStr,
+  asStrN,
+  cell,
+  mapAlbum,
+  mapItem,
+  parseGenres,
+  type AlbumRow,
+  type AxisCounts,
+  type CollectionDetail,
+  type CollectionItem,
+  type ExportItem,
+  type ExportPayload,
+  type FacetCount,
+  type Stats
+} from './types';
+import * as assoc from './associations';
 import * as writes from './writes';
 
 export { DuplicateRecordError, NotFoundError, CursorInvalidError } from './errors';
@@ -94,11 +112,7 @@ export class DAO {
   }
 
   stats(): Stats {
-    const row = this.st
-      .get(
-        'SELECT (SELECT COUNT(*) FROM collection_record) AS records, (SELECT COUNT(*) FROM collection_record WHERE is_favorite = 1) AS favorites, (SELECT COUNT(*) FROM tags) AS tags, (SELECT COUNT(DISTINCT artist) FROM album_metadata) AS artists'
-      )
-      .get() as Row | undefined;
+    const row = this.st.get(SQL_STATS).get() as Row | undefined;
     const r = row ?? {};
     return {
       records: Number(cell(r, 'records') ?? 0),
@@ -139,6 +153,41 @@ export class DAO {
     }
     return found;
   }
+
+  /** 全量导出投影（P1-3 §5.4 原形，永久免费）：tags 一次取回按 record_id 归组；全表读 = 内存纪律①唯一豁免 */
+  exportAll(userId = 'local'): ExportPayload {
+    const rows = this.st.get(SQL_EXPORT).all(userId) as Row[];
+    const byRecord = new Map<string, string[]>();
+    for (const t of this.st.get(SQL_EXPORT_TAGS).all(userId) as Row[]) {
+      const rid = asStr(cell(t, 'record_id'), 'record_id');
+      byRecord.set(rid, [...(byRecord.get(rid) ?? []), asStr(cell(t, 'name'), 'name')]);
+    }
+    return {
+      version: '2.0',
+      exported_at: nowIso(),
+      records: rows.map((r) => ({
+        album: {
+          title: asStr(cell(r, 'title'), 'title'),
+          artist: asStr(cell(r, 'artist'), 'artist'),
+          release_year: asNumN(cell(r, 'release_year')),
+          cover_url: asStrN(cell(r, 'cover_url')),
+          genres: parseGenres(cell(r, 'genres'))
+        },
+        record: {
+          added_at: asStr(cell(r, 'added_at'), 'added_at'),
+          listened_at: asStrN(cell(r, 'listened_at')),
+          listened_precision: asStrN(cell(r, 'listened_precision')) as ExportItem['record']['listened_precision'],
+          is_favorite: asBool(cell(r, 'is_favorite')),
+          cover_color: asNumN(cell(r, 'cover_color')),
+          note: asStrN(cell(r, 'note'))
+        },
+        tags: byRecord.get(asStr(cell(r, 'record_id'), 'record_id')) ?? []
+      }))
+    };
+  }
+
+  // P1-5 联想（实现见 associations.ts；案 B 域文件委托——2026-11-14 用户裁决路径 B，DAO <200 行护栏 G3）
+  getAssociations = (recordId: string, limit = 18, userId = 'local'): assoc.AssociationItem[] => assoc.getAssociations(this.st, recordId, limit, userId);
 
   // —— 写路径（实现见 writes.ts；委托保持调用方接口不变，PM §7.1 护栏）——
   upsertAlbum = (input: Parameters<typeof writes.upsertAlbum>[2]): { id: string; existed: boolean } => writes.upsertAlbum(this.db, this.st, input);

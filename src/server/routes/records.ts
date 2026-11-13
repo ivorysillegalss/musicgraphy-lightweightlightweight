@@ -67,6 +67,13 @@ export function recordsRoutes(dao: DAO, opts: RecordsRouteOptions = {}): Hono {
 
   app.get('/records/:id', (c) => c.json({ data: withCover(dao.getRecord(c.req.param('id'))) }));
 
+  // P1-5 联想：同期/同天/同 Tag（实现见 db/associations.ts，评审案 docs/associations-review.md）；
+  // 锚不存在 → NotFoundError 经 onError 转 404 record_not_found；空联想 = 200 {data:[]}（页面侧不渲染）
+  app.get('/records/:id/associations', (c) => {
+    const items = dao.getAssociations(c.req.param('id'), clampLimit(c.req.query('limit')));
+    return c.json({ data: items.map(withCover) });
+  });
+
   app.patch('/records/:id', async (c) => {
     const b = (await c.req.json().catch(() => null)) as Record<string, unknown> | null;
     if (b === null) return c.json(errorBody('invalid_body', '请求体须为 JSON'), 422);

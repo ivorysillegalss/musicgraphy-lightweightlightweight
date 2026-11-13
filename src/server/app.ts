@@ -7,6 +7,7 @@ import { errorBody } from './http';
 import { installAuth } from './auth';
 import { metadataRoutes } from './routes/metadata';
 import { recordsRoutes, type RecordsRouteOptions } from './routes/records';
+import { exportRoutes } from './routes/export';
 import { pagesRoutes } from './routes/pages';
 import { coverRoutes } from './metadata/cover-routes';
 import { SourceChain, type AlbumSource } from './metadata/sources';
@@ -40,6 +41,7 @@ export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: A
 
   app.route('/api/v1', metadataRoutes(dao, sources));
   app.route('/api/v1', recordsRoutes(dao, opts));
+  app.route('/api/v1', exportRoutes(dao, opts.cover?.coversDir ?? cfg.coversDir));
   // 呈现层（ADR-003）：SSR 页面子应用——Collection / 详情双区 / 添加基线 / 片段端点。
   // 旧 W1 垂直切片首页（renderHome + POST /add）由本子应用整体取代（模板见 pages/*.ts）。
   app.route('/', pagesRoutes(dao, chain, opts));

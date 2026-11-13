@@ -18,6 +18,18 @@ export const SQL_ECHO =
   `WHERE r.user_id = ? AND strftime('%m-%d', r.added_at, 'localtime') = strftime('%m-%d', 'now', 'localtime') ` +
   `AND date(r.added_at) <= date('now', 'localtime', '-1 year') ORDER BY r.added_at DESC LIMIT ?`;
 
+// 全量导出投影（P1-3 §5.4，永久免费）：album 公共字段 + record 个人字段。全表读 =
+// 内存纪律①（LIMIT≤60）的唯一豁免（拆分方案 §8 B2）；tags[] 全量经 SQL_EXPORT_TAGS
+// 一次取回后按 record_id 归组（免逐记录 N+1），与 getRecord 的 SQL_RECORD_TAGS 同序（t.name）
+export const SQL_EXPORT =
+  `SELECT r.id AS record_id, m.title, m.artist, m.release_year, m.cover_url, m.genres, ` +
+  'r.added_at, r.listened_at, r.listened_precision, r.is_favorite, r.cover_color, r.note ' +
+  'FROM collection_record r JOIN album_metadata m ON m.id = r.album_id WHERE r.user_id = ? ORDER BY r.added_at, r.id';
+
+export const SQL_EXPORT_TAGS =
+  'SELECT rt.record_id, t.name FROM record_tag rt JOIN tags t ON t.id = rt.tag_id ' +
+  'JOIN collection_record r ON r.id = rt.record_id WHERE r.user_id = ? ORDER BY rt.record_id, t.name';
+
 // 轴排除式 facet 计数（FR-2 / 复审注：genre 轴经 json_each，不可索引，预期 <10ms——W0 spike 实测 4ms）
 export const AXIS_SQL: Record<string, (w: string) => string> = {
   genre: (w) =>
@@ -33,3 +45,32 @@ export const AXIS_SQL: Record<string, (w: string) => string> = {
   tag: (w) =>
     `SELECT t.name AS value, COUNT(*) AS count FROM record_tag rt JOIN tags t ON t.id = rt.tag_id JOIN collection_record r ON r.id = rt.record_id JOIN album_metadata m ON m.id = r.album_id WHERE ${w} GROUP BY t.name ORDER BY count DESC LIMIT 50`
 };
+
+// P1-5 联想（docs/associations-review.md §2，口径 = 02 §3⑤ + gap 报告）：锚点不存在 → NotFoundError。
+// 同 Tag 走 record_tag PK 前缀点查 + idx_record_tag_tag（评审 R9）；同天/同期 strftime 月函数不可索引
+// → 全表扫描规模=记录数（5000 行 <5ms 实测先例，评审案 §5 可接受；范围扫描改写登记为未来优化 R5）。
+// 同期/同天同取 'localtime'（R2：本地日历口径一处）；当年同天也命中（Q3：联想 ≠ 那年今日，无周年条件）
+export const SQL_ASSOC_ANCHOR = 'SELECT added_at FROM collection_record WHERE id = ? AND user_id = ?';
+
+export const SQL_ASSOC_TAG =
+  `SELECT ${LIST_COLS}, MIN(t.name) AS matched_tag ` +
+  'FROM collection_record r JOIN album_metadata m ON m.id = r.album_id ' +
+  'JOIN record_tag a_rt ON a_rt.record_id = r.id JOIN tags t ON t.id = a_rt.tag_id ' +
+  'WHERE r.user_id = ? AND r.id <> ? AND a_rt.tag_id IN (SELECT tag_id FROM record_tag WHERE record_id = ?) ' +
+  'GROUP BY r.id ORDER BY r.added_at DESC, r.id DESC LIMIT ?';
+
+export const SQL_ASSOC_DAY =
+  `SELECT ${LIST_COLS}, NULL AS matched_tag ` +
+  'FROM collection_record r JOIN album_metadata m ON m.id = r.album_id ' +
+  "WHERE r.user_id = ? AND r.id <> ? AND strftime('%m-%d', r.added_at, 'localtime') = strftime('%m-%d', ?, 'localtime') " +
+  'ORDER BY r.added_at DESC, r.id DESC LIMIT ?';
+
+export const SQL_ASSOC_PERIOD =
+  `SELECT ${LIST_COLS}, NULL AS matched_tag ` +
+  'FROM collection_record r JOIN album_metadata m ON m.id = r.album_id ' +
+  "WHERE r.user_id = ? AND r.id <> ? AND strftime('%Y-%m', r.added_at, 'localtime') = strftime('%Y-%m', ?, 'localtime') " +
+  'ORDER BY r.added_at DESC, r.id DESC LIMIT ?';
+
+// 仪表总览四计数（自 dao.ts stats() 外拆，2026-11-14 B1 案 B 变体配套——IM-10a 先例同款机械搬移，零行为变更）
+export const SQL_STATS =
+  'SELECT (SELECT COUNT(*) FROM collection_record) AS records, (SELECT COUNT(*) FROM collection_record WHERE is_favorite = 1) AS favorites, (SELECT COUNT(*) FROM tags) AS tags, (SELECT COUNT(DISTINCT artist) FROM album_metadata) AS artists';

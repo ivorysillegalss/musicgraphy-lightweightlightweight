@@ -86,6 +86,27 @@ export interface Stats {
   artists: number;
 }
 
+// —— 导出投影（P1-3 §5.4 原形，永久免费；评审 R6：cover_url 仅远端地址，图片文件走 with_covers zip）——
+
+export interface ExportItem {
+  album: { title: string; artist: string; release_year: number | null; cover_url: string | null; genres: string[] };
+  record: {
+    added_at: string;
+    listened_at: string | null;
+    listened_precision: 'day' | 'year' | null;
+    is_favorite: boolean;
+    cover_color: number | null;
+    note: string | null;
+  };
+  tags: string[];
+}
+
+export interface ExportPayload {
+  version: string;
+  exported_at: string;
+  records: ExportItem[];
+}
+
 // —— Row → 类型映射（node:sqlite 返回值为宽松 Record<string, primitive>，边界处收窄）——
 
 export const cell = (r: Row, k: string): Cell => r[k] ?? null;

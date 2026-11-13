@@ -4,6 +4,7 @@
  * （FR-1「先添加、稍后补」合法）。DAO null → 404 引语页；异常 → errorStrip 页。
  */
 import { html } from 'hono/html';
+import type { AssociationItem } from '../db/associations';
 import type { CollectionDetail } from '../db/types';
 import { coverCard, flashBanner, icon, emptyWall, errorStrip, siteHeader, type FlashKind, type LayoutOptions, layout } from '../html';
 
@@ -14,7 +15,44 @@ function fmtListened(listenedAt: string | null, precision: string | null): strin
   return precision === 'year' ? `${listenedAt.slice(0, 4)} 年` : listenedAt.slice(0, 10);
 }
 
-function detailBody(d: CollectionDetail, flash: FlashKind, layoutOpts: Omit<LayoutOptions, 'body'>): Esc {
+/**
+ * ASSOCIATIONS 区（P1-5 联想入口，02 §3⑤）：三组各 ≤6 张，组题 = 确定性语义
+ * （同期收藏 = 同自然月 / 同一天 = 同 MM-DD / 共享 Tag——禁「猜你喜欢」式模糊标题）；
+ * 空组不渲染、全空区不渲染（联想是馈赠，pages.ts safe 包装同款静默语义）。
+ */
+function associationsSection(anchor: CollectionDetail, items: AssociationItem[]): Esc {
+  const groups = (
+    [
+      { title: `同期收藏 · ${anchor.added_at.slice(0, 4)} 年 ${anchor.added_at.slice(5, 7)} 月`, relation: 'same_period' },
+      { title: `同一天 · ${anchor.added_at.slice(5, 10)}`, relation: 'same_day' },
+      { title: '共享 Tag', relation: 'same_tag' }
+    ] as Array<{ title: string; relation: AssociationItem['relation'] }>
+  )
+    .map((g) => ({ ...g, items: items.filter((x) => x.relation === g.relation).slice(0, 6) }))
+    .filter((g) => g.items.length > 0);
+  if (groups.length === 0) return html``;
+  const card = (x: AssociationItem) =>
+    coverCard({
+      recordId: x.id,
+      title: x.album.title,
+      artist: x.album.artist,
+      releaseYear: x.album.release_year,
+      coverSrc: x.album.cover_local !== null ? `/covers/${x.album.cover_local}` : x.album.cover_url,
+      coverColor: x.cover_color,
+      isFavorite: x.is_favorite
+    });
+  return html`<div class="zone" style="margin-top: var(--space-lg);">
+  <div class="mono zone-title" style="color:var(--color-accent-text);">ASSOCIATIONS · 线索回响</div>
+  ${groups.map(
+    (g) => html`<div style="margin-top: var(--space-md);">
+    <div class="small" style="color:var(--color-muted-foreground);">${g.title} · ${String(g.items.length)} 张</div>
+    <div class="cover-wall">${g.items.map(card)}</div>
+  </div>`
+  )}
+</div>`;
+}
+
+function detailBody(d: CollectionDetail, flash: FlashKind, layoutOpts: Omit<LayoutOptions, 'body'>, associations?: AssociationItem[]): Esc {
   const r = d;
   const listened = fmtListened(r.listened_at, r.listened_precision);
   const addedMonth = `${r.added_at.slice(0, 4)} 年 ${r.added_at.slice(5, 7)} 月`;
@@ -80,12 +118,13 @@ function detailBody(d: CollectionDetail, flash: FlashKind, layoutOpts: Omit<Layo
       </div>
     </div>
   </div>
+  ${associations === undefined ? '' : associationsSection(r, associations)}
 </main>`;
   return layout({ ...layoutOpts, body });
 }
 
-export function renderAlbumDetail(d: CollectionDetail, flash: FlashKind, layoutOpts: Omit<LayoutOptions, 'body'>): Esc {
-  return detailBody(d, flash, layoutOpts);
+export function renderAlbumDetail(d: CollectionDetail, flash: FlashKind, layoutOpts: Omit<LayoutOptions, 'body'>, associations?: AssociationItem[]): Esc {
+  return detailBody(d, flash, layoutOpts, associations);
 }
 
 export function renderAlbumNotFound(id: string, layoutOpts: Omit<LayoutOptions, 'body'>): Esc {

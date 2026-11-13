@@ -107,6 +107,20 @@ export interface ExportPayload {
   records: ExportItem[];
 }
 
+// —— 观察池仪表（PRD §6 六埋点 / 02 §4 metrics 行：{data}，匿名化、可关闭）——
+// coverage 北极星实算（SQL_COVERAGE）；行为类五项待埋点（W8-9 行为层）→ null，notes 逐项记录数据源缺失说明
+export interface MetricsCoverage {
+  coverage: number | null;
+  search_fail_rate: number | null;
+  named_view_rate: number | null;
+  echo_ctr: number | null;
+  note_revisit_rate: number | null;
+  export_usage: number | null;
+  generated_at: string;
+  /** null 字段的数据源缺失说明（埋点接线后对应条目移除，勿伪造数字） */
+  notes: Partial<Record<'search_fail_rate' | 'named_view_rate' | 'echo_ctr' | 'note_revisit_rate' | 'export_usage', string>>;
+}
+
 // —— Row → 类型映射（node:sqlite 返回值为宽松 Record<string, primitive>，边界处收窄）——
 
 export const cell = (r: Row, k: string): Cell => r[k] ?? null;

@@ -1,6 +1,6 @@
 import type { Db } from './connection';
 import { buildWhere, decodeCursor, encodeCursor, escapeLike, normalizeTag, nowIso, SORTS, StmtCache, type Cell, type Filters, type Row } from './sql';
-import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_ECHO, SQL_EXPORT, SQL_EXPORT_TAGS, SQL_RECORD_TAGS, SQL_STATS } from './queries';
+import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_ECHO, SQL_EXPORT, SQL_EXPORT_TAGS, SQL_RECORD_TAGS } from './queries';
 import { CursorInvalidError, NotFoundError } from './errors';
 import {
   asBool,
@@ -21,6 +21,7 @@ import {
   type Stats
 } from './types';
 import * as assoc from './associations';
+import * as metrics from './metrics';
 import * as writes from './writes';
 
 export { DuplicateRecordError, NotFoundError, CursorInvalidError } from './errors';
@@ -111,16 +112,9 @@ export class DAO {
     return rows.map(mapItem);
   }
 
-  stats(): Stats {
-    const row = this.st.get(SQL_STATS).get() as Row | undefined;
-    const r = row ?? {};
-    return {
-      records: Number(cell(r, 'records') ?? 0),
-      favorites: Number(cell(r, 'favorites') ?? 0),
-      tags: Number(cell(r, 'tags') ?? 0),
-      artists: Number(cell(r, 'artists') ?? 0)
-    };
-  }
+  // —— 仪表聚合（实现见 metrics.ts：stats 四计数机械搬移零行为变更 + 观察池 metricsCoverage 北极星；委托 PM §7.1 护栏）——
+  stats = (): Stats => metrics.stats(this.st);
+  metricsCoverage = (userId = 'local'): metrics.MetricsCoverage => metrics.metricsCoverage(this.st, userId);
 
   /** FR-1 已收藏前置标记：按 (source, source_id) 批量查已存在（SQLite 变量上限，分块 100） */
   existingSourceIds(source: string, sourceIds: string[]): Set<string> {

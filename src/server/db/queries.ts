@@ -74,3 +74,10 @@ export const SQL_ASSOC_PERIOD =
 // 仪表总览四计数（自 dao.ts stats() 外拆，2026-11-14 B1 案 B 变体配套——IM-10a 先例同款机械搬移，零行为变更）
 export const SQL_STATS =
   'SELECT (SELECT COUNT(*) FROM collection_record) AS records, (SELECT COUNT(*) FROM collection_record WHERE is_favorite = 1) AS favorites, (SELECT COUNT(*) FROM tags) AS tags, (SELECT COUNT(DISTINCT artist) FROM album_metadata) AS artists';
+
+// 线索覆盖率（PRD §6 北极星，B3 观察池仪表域）：根线索 = note 非空串 / 听期 listened_at 非空 / 任一 tag。
+// tag 用 EXISTS 免 join 复制行（record_tag 多对一会虚增 covered）；note 空串不计——writes 不归一空串（`note ?? null`），防御性排除
+export const SQL_COVERAGE =
+  'SELECT (SELECT COUNT(*) FROM collection_record WHERE user_id = ?) AS total, ' +
+  "(SELECT COUNT(*) FROM collection_record r WHERE r.user_id = ? AND ((r.note IS NOT NULL AND r.note <> '') OR r.listened_at IS NOT NULL " +
+  'OR EXISTS (SELECT 1 FROM record_tag rt WHERE rt.record_id = r.id))) AS covered';

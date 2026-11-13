@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 · 专辑详情 · Aria</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  .assoc-group { margin-bottom: var(--space-lg); }
+  .assoc-group:last-child { margin-bottom: 0; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand">Musicgraphy<small>ALBUM DETAIL</small></div>
+  <nav class="page-nav" aria-label="设计包页面">
+    <a href="index.html">导航</a>
+    <a href="style-guide.html">设计系统</a>
+    <a href="collection.html">Collection</a>
+    <a href="add-flow.html">Add 流程</a>
+    <a href="album-detail.html" aria-current="page">专辑详情</a>
+    <a href="states.html">三态规范</a>
+  </nav>
+</header>
+
+<main>
+  <a href="collection.html" class="small" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--color-muted-foreground);min-height:44px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    返回 Collection
+  </a>
+
+  <div class="detail-layout" style="margin-top: var(--space-lg);">
+    <!-- 左：封面（含 D3 主色点） -->
+    <div class="detail-cover">
+      <div class="cover g-blue" style="aspect-ratio:1;">
+        <span class="cover-dot" style="width:14px;height:14px;bottom:14px;left:14px;background:var(--swatch-blue);" title="封面主色：蓝"></span>
+        <svg class="cover-fav" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="top:14px;right:14px;" aria-label="Favorite"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      </div>
+      <p class="small" style="margin-top: var(--space-sm);">封面主色：<span class="accent-text" style="font-weight:600;">蓝</span>（D3 派生字段 · 色名随色点出现，不单靠颜色）</p>
+    </div>
+
+    <!-- 右：双区 -->
+    <div>
+      <h1 style="font-family:var(--font-display); font-size:34px; margin-bottom:4px;">Aria</h1>
+      <p style="font-size:16px; color:var(--color-muted-foreground); margin-bottom: var(--space-md);">Ryuichi Sakamoto · 1984</p>
+      <div class="chip-list" style="margin-bottom: var(--space-lg);">
+        <span class="chip" style="cursor:default; border-style:dashed;" title="Genre = 音乐的公共属性">Electronic</span>
+        <span class="chip" style="cursor:default; border-style:dashed;">Ambient</span>
+        <span class="mono" style="margin-left:6px;">VIA MUSICBRAINZ</span>
+      </div>
+
+      <!-- 外部元数据区（公共事实 · 钢墨语气） -->
+      <div class="zone">
+        <div class="mono zone-title" style="color:var(--color-secondary);">PUBLIC METADATA · 外部元数据（可替换，非资产）</div>
+        <table class="token-table" style="max-width:520px;">
+          <tbody>
+            <tr><td style="width:120px;">艺术家</td><td>Ryuichi Sakamoto</td></tr>
+            <tr><td>发行年份</td><td>1984</td></tr>
+            <tr><td>Genre</td><td>Electronic / Ambient</td></tr>
+            <tr><td>发行厂牌</td><td>Sony Music Japan</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 个人记录区（记忆条 · 琥珀语气 · §4 数据二分的视觉执行） -->
+      <div class="zone">
+        <div class="mono zone-title" style="color:var(--color-accent-text);">PERSONAL RECORD · 个人记录（你的资产 · 全量可导出）</div>
+        <p class="memory-strip" style="max-width:56ch;">
+          2023 年 8 月记录<span class="sep">·</span>听的时期：2010–2013<span class="sep">·</span>Tags：夜晚 / 通勤<span class="sep">·</span>
+          当时：<span class="when">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-text)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;" aria-hidden="true"><path d="M3 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2H4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2h1c1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/><path d="M15 21c3 0 7-1 7-8V5c0-1.25-.75-2-2-2h-4c-1.25 0-2 .75-2 2v6c0 1.25.75 2 2 2h1c1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/></svg>
+            青旅的天台，海边的夏天。</span>
+        </p>
+        <div class="chip-list" style="margin-top: var(--space-lg);">
+          <button class="btn btn-secondary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+            Favorite
+          </button>
+          <button class="btn btn-secondary" id="relisten">又听了一次</button>
+          <button class="btn btn-secondary">补线索</button>
+          <button class="btn btn-danger" style="margin-left:auto;">移除记录</button>
+        </div>
+        <div class="toast" id="relisten-toast" hidden style="position:static; transform:none; margin-top: var(--space-md); display:inline-flex;">
+          LISTENED AGAIN · LISTENEDAT → 2026-11-11
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 联想入口（P1-5）：组题 = 确定性语义，禁“猜你喜欢” -->
+  <div class="zone" style="margin-top: var(--space-xl);">
+    <div class="mono zone-title" style="color:var(--color-accent-text);">ASSOCIATIONS · 联想入口（零新数据的激活扩散）</div>
+
+    <div class="assoc-group">
+      <div class="mono" style="margin-bottom: var(--space-sm); color: var(--color-muted-foreground);">同期听的（2010–2013）</div>
+      <div class="assoc-grid">
+        <div class="cover-card" tabindex="0" role="button" aria-label="Selected Ambient Works 85-92"><div class="cover g-blue"><div class="cover-meta"><span class="cover-title">Selected Ambient Works 85-92</span><span class="cover-artist">APHEX TWIN · 1992</span></div></div></div>
+        <div class="cover-card" tabindex="0" role="button" aria-label="Geogaddi"><div class="cover g-indigo"><div class="cover-meta"><span class="cover-title">Geogaddi</span><span class="cover-artist">BOARDS OF CANADA · 2002</span></div></div></div>
+        <div class="cover-card" tabindex="0" role="button" aria-label="Turn On the Bright Lights"><div class="cover g-red"><div class="cover-meta"><span class="cover-title">Turn On the Bright Lights</span><span class="cover-artist">INTERPOL · 2002</span></div></div></div>
+        <div class="cover-card" tabindex="0" role="button" aria-label="Harvest"><div class="cover g-brown"><div class="cover-meta"><span class="cover-title">Harvest</span><span class="cover-artist">NEIL YOUNG · 1972</span></div></div></div>
+      </div>
+    </div>
+
+    <div class="assoc-group">
+      <div class="mono" style="margin-bottom: var(--space-sm); color: var(--color-muted-foreground);">同 Tag 的其他专辑（夜晚）</div>
+      <div class="assoc-grid">
+        <div class="cover-card" tabindex="0" role="button" aria-label="Untrue"><div class="cover g-gray"><div class="cover-meta"><span class="cover-title">Untrue</span><span class="cover-artist">BURIAL · 2007</span></div></div></div>
+        <div class="cover-card" tabindex="0" role="button" aria-label="Madvillainy"><div class="cover g-brown"><div class="cover-meta"><span class="cover-title">Madvillainy</span><span class="cover-artist">MADVILLAIN · 2004</span></div></div></div>
+        <div class="cover-card" tabindex="0" role="button" aria-label="Sleep"><div class="cover g-indigo"><div class="cover-meta"><span class="cover-title">Sleep</span><span class="cover-artist">MAX RICHTER · 2015</span></div></div></div>
+        <div class="cover-card" tabindex="0" role="button" aria-label="Unknown Pleasures"><div class="cover g-black"><div class="cover-meta"><span class="cover-title">Unknown Pleasures</span><span class="cover-artist">JOY DIVISION · 1979</span></div></div></div>
+      </div>
+    </div>
+
+    <div class="assoc-group">
+      <div class="mono" style="margin-bottom: var(--space-sm); color: var(--color-muted-foreground);">同天添加的</div>
+      <div class="assoc-grid">
+        <div class="cover-card" tabindex="0" role="button" aria-label="Kind of Blue"><div class="cover g-blue"><div class="cover-meta"><span class="cover-title">Kind of Blue</span><span class="cover-artist">MILES DAVIS · 1959</span></div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <p class="small" style="margin-top: var(--space-2xl);">注：双区之间以 hairline + mono 区题分隔——「外部元数据可替换、用户数据是资产」（§4 数据二分）的视觉执行。联想组题即确定性语义（同期/同天/同 Tag），不出现任何推荐语气。</p>
+</main>
+
+<script>
+  document.getElementById('relisten').addEventListener('click', () => {
+    const t = document.getElementById('relisten-toast');
+    t.hidden = false;
+    setTimeout(() => { t.hidden = true; }, 2400);
+  });
+</script>
+</body>
+</html>

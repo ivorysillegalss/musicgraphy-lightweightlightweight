@@ -1,0 +1,127 @@
+{
+  "version": 3,
+  "slug": "musicgraphy-2.0-platform",
+  "title": "Musicgraphy 2.0 平台架构（自底向上：存储优先、轻依赖、内存友好）",
+  "mode": "greenfield",
+  "status": "decided",
+  "decided": "C1-node-sqlite-hono-ssr-islands",
+  "context": {
+    "constraints": [
+      "用户硬需求①：网站不搞重",
+      "用户硬需求②：不引入过多依赖",
+      "用户硬需求③：使用 SQLite 级轻量中间件",
+      "用户硬需求④：内存友好",
+      "AGENTS.md §11 优先简单 / §14 TypeScript / §16 Find→Record→Organize→Review"
+    ],
+    "upstream_docs": [
+      "变现文档包/01-PRD（FR-1~FR-6 验收口径）",
+      "变现文档包/02-数据模型与API设计（逻辑模型，引擎无关）",
+      "变现文档包/03-路线图B（当前默认执行方案）",
+      "Musicgraphy 2.0 新版产品理念（终稿）"
+    ],
+    "environment_facts": [
+      "本机（Windows Server）未安装 node/npm/python —— 工具链安装是开工 D1 第一项（装 Node 26 LTS，复审 V6）",
+      "报告未渲染（python 缺失，按 system-design skill 规则记录为 unfinished-render）",
+      "本机未发现现有代码仓库 —— greenfield 成立"
+    ]
+  },
+  "envelope": {
+    "scale": "单用户；目标 5,000 张专辑；增长 ~1.4 张/周（10 年 ≈ 2 倍）",
+    "db_size_mb": { "now": 18.3, "ten_years": 36.6, "derivation": "5000 行 × 2.5KB × 1.5(索引) / 1024；PS 验证；10 年值 = 保守 2× 上界（按 1.4 张/周 实算 ≈21MB——评审 R7 修正推导）" },
+    "note_scan_kb": { "value": 1500, "derivation": "5000 notes × 0.3KB；LIKE 全扫 < 5ms → 搜索引擎被关闭" },
+    "first_paint_mb": { "value": 2.46, "derivation": "HTML 80KB + CSS 15KB + JS ≤30KB + 60 封面×40KB；封面 immutable 缓存后归零" },
+    "server_queries_per_page": { "value": 6, "derivation": "1 页查询 + 5 轴计数；索引轴各 <1ms，genre 轴经 json_each 不可索引（预期 <10ms）——复审注：原'全走索引'表述过强" },
+    "qps": { "avg": "<0.1", "peak": "10（浏览器并发 6）", "note": "单用户，n/a 于分布式 QPS 语境" },
+    "write_concurrency": 1,
+    "rss_budget_mb": { "target": 100, "alarm": 150, "breakdown": "page cache 8 + 应用堆 ~15 + Node 空载基线（社区实测区间 50–120MB，原 ~45MB 偏乐观）", "guard": "启动参数 --max-old-space-size=64；<100MB 目标以 D2 在目标 OS 实测背书（复审 V13）", "alarm_source": "进程定时读 process.memoryUsage().rss 写日志、越界 WARN，由守护进程承接（复审 V13）" }
+  },
+  "invariants": [
+    { "id": "I1", "text": "集合语义：一专辑一记录", "enforcement": "SQLite UNIQUE(user_id, album_id) 物理约束（album_id NOT NULL，复审 V12）" },
+    { "id": "I2", "text": "用户数据不可被元数据同步覆盖", "enforcement": "album_metadata 与 collection_record 物理分表；同步只写前者" },
+    { "id": "I3", "text": "记录 ≤3 步/15s", "enforcement": "确认层默认即完成态；无 JS 基线保证（chips=链接/搜索=GET form/添加=POST+303，复审 V4）；验收口径 FR-6" },
+    { "id": "I4", "text": "全量导出可重建档案", "enforcement": "导出 = 单文件库的 JSON 投影 + 含封面 zip 选项（评审 R6）；永久免费" },
+    { "id": "I5", "text": "无打扰（Review 仅确定性时间锚）", "enforcement": "无推送通道存在于架构中（没有通知子系统可被滥用）" }
+  ],
+  "failure_modes": [
+    { "id": "F1", "name": "元数据源挂/改版", "cover": "title/artist/cover 本地快照（源失效仍可显示与检索）；上游调用全局串行 ≥1s + 显式 User-Agent（复审 V2）" },
+    { "id": "F2", "name": "node:sqlite API 演进中", "cover": "node:sqlite 现状 1.2 RC、无需 flag，处于 DatabaseSync/StatementSync → Database/Statement 类改名期（复审核实）；DAO 单文件隔离（与 better-sqlite3 约八成同形）→ 一日替换回退路径 C2（仅换驱动，复审 V7）" },
+    { "id": "F3", "name": "封面源防盗链/失效", "cover": "首次访问落盘 data/covers/（hash 命名）+ immutable 缓存头；抓取取 250/500 缩略图尺寸（复审 V2）" },
+    { "id": "F4", "name": "LIKE 检索退化（语料远超 5 万条时）", "cover": "FTS5 升级路径（measured：现在 1.5MB 扫描 <5ms，不提前建）" },
+    { "id": "F5", "name": "进程内存膨胀", "cover": "五条纪律：分页强制 LIMIT 60 / 封面流式 / 禁 base64 / prepared stmt 缓存 / 无 hydration；启动参数 --max-old-space-size=64（复审 V13）" }
+  ],
+  "dataModel": {
+    "source": "变现文档包/02-数据模型与API设计.md（逻辑模型不变）",
+    "physical_sqlite": {
+      "pragmas": ["journal_mode=WAL(持久)", "synchronous=NORMAL", "cache_size=-8000(8MB)", "foreign_keys=ON", "busy_timeout=5000"],
+      "pragma_note": "后四项 per-connection，DAO 打开例程统一执行；mmap_size 经评审 R2 移除（库小于窗口无收益 + Windows 工作集计入映射页，威胁 RSS<100MB）",
+      "migrations": "db/migrations/00NN_*.sql 顺序执行 + PRAGMA user_version 记录版本（DDL 事务包裹 + journal_mode 事务外设置，复审 V8 注记）",
+      "connection": "单连接、同步 API、无连接池（Node 单线程 × SQLite 单写者 = 零锁竞争）"
+    }
+  },
+  "candidates": [
+    {
+      "id": "C1-node-sqlite-hono-ssr-islands",
+      "summary": "Node 26 LTS 单进程 + node:sqlite（0 依赖）+ Hono + @hono/node-server + 服务端 HTML（hono/html）+ 原生 TS 岛屿（无前端框架运行时）",
+      "runtime_deps": 2,
+      "strength": "四条硬需求全部满足；内存常驻最小",
+      "weakness": "node:sqlite 稳定性 1.2 RC 且类改名期（F2 缓解：DAO 隔离 + C2 回退）"
+    },
+    {
+      "id": "C2-better-sqlite3-driver-swap",
+      "summary": "Node 26 + better-sqlite3 + Hono + SSR——仅换 DAO 驱动，前端与架构其余不变（复审 V7：原 Preact SPA 为早期候选残留，已删除）",
+      "runtime_deps": 3,
+      "strength": "SQLite API 最稳（.transaction()/.pragma() 齐备）",
+      "weakness": "多 1 个原生编译依赖（Windows 构建链风险；Node 26 prebuilt 覆盖列入 D2）",
+      "role": "F2 的既定回退路径，非对等候选——回退 = 只换 DAO 驱动文件"
+    },
+    {
+      "id": "C3-cloudflare-d1",
+      "summary": "Cloudflare Workers + D1 + Hono",
+      "runtime_deps": 1,
+      "strength": "运维最省、全球边缘",
+      "weakness": "无本地磁盘（封面缓存需 R2）、D1 行为差异、平台锁定；内存友好目标被平台接管而非自主可控",
+      "role": "成本极低场景的替代，本轮不选"
+    }
+  ],
+  "rejected_options": [
+    "Next.js —— 依赖树庞大，违背硬需求②（一行否决）",
+    "Prisma/重型 ORM —— 违背②③，DAO 手写 SQL 更薄（一行否决）",
+    "Postgres/Redis/Elasticsearch/MQ/微服务 —— envelope 全部关闭（DB 18MB、单用户、LIKE<5ms）+ AGENTS.md §11",
+    "Electron/桌面壳 —— 超出 Web 产品边界"
+  ],
+  "decision": {
+    "recommended": "C1-node-sqlite-hono-ssr-islands",
+    "evidence_chain": "需求②依赖最少：C1=2（hono + @hono/node-server，复审 V5 修正计数）vs C2=3 vs C3=平台绑定；需求④内存：C1 无 VDOM/无 hydration，RSS 预算 100MB 内最易达成；需求③：node:sqlite 即 SQLite 本体；需求①：单进程单文件部署。I1~I5 三者均可满足（中性）。C1 唯一弱点 F2 有命名缓解（DAO 隔离 + C2 一日回退，仅换驱动），且 D2 spike 可实测证伪",
+    "falsifiable_by": "D2 spike：若 node:sqlite 在 Node 26 LTS 缺 API 或行为异常 → 启用 C2 回退（唯一改动 = DAO 文件换 better-sqlite3）"
+  },
+  "deep_dives": [
+    { "id": "DD1", "topic": "node:sqlite vs better-sqlite3", "decision": "node:sqlite 主选（Node 26 LTS，1.2 RC、无需 flag，模块级 backup() 已内置）；两者同步 API 约八成同形，DAO 8 个方法隔离差异" },
+    { "id": "DD2", "topic": "内存预算", "decision": "RSS<100MB 目标/150MB 告警；基线按社区实测 50–120MB 校正、--max-old-space-size=64、告警由进程自读 RSS 写日志 + 守护承接（复审 V13）；F5 五条纪律写进代码评审清单" },
+    { "id": "DD3", "topic": "交互形态", "decision": "URL 即状态（筛选条件在 query string）+ 无 JS 基线（chips=链接/搜索=GET form/添加=POST+303，复审 V4）+ fetch HTML 片段 swap（AbortController/pushState/错误态/事件委托，约 100–200 行）；HTML 生成用 hono/html + 三条上下文纪律（复审 V9）；htmx 钉 2.x，引入即整体替换 swap（复审 V15）；dev = @hono/vite-dev-server 或 tsx watch（复审 V16）" },
+    { "id": "DD4", "topic": "备份与恢复", "decision": "RPO=24h（触发 = 启动 + 每日定时，评审 R1；按天去重保留 7 天，复审 V14；机制 = VACUUM INTO / 模块级 sqlite.backup() 二选一）；offsite 必备（复审 V3）；恢复清单进 ADR-006（复审 V8）；未来 Pro 云备份 = 同一文件推对象存储，架构不变" }
+  ],
+  "api_deltas_from_api_design_skill": [
+    "全部端点加 /api/v1/ 前缀",
+    "POST /records 成功 → 201 + Location；重复 → 409 {error:{code:'duplicate_record',details:{record_id}}}；校验失败 → 422 字段级 details（非 400/500）",
+    "Grid 分页 = cursor（?cursor=&limit=60）——复合键 [sort_value, id] base64(JSON) + row-value 比较，sort 变更即作废；meta.has_next 放值、links.next 放 URL（复审 V11）",
+    "元数据代理限流（复审 V2 重设计）：全局串行队列 ≥1s 间隔 + 全局 30/min + 429 + Retry-After + 显式 User-Agent（MusicBrainz 官方 1 req/s，固定窗口必打穿；per-IP 弃用）；iTunes 单独 20/min",
+    "错误 envelope 统一 {error:{code,message,details?}}；成功 {data}/{data,meta,links}；禁 200+error 歧义形态",
+    "鉴权（复审 V10）：无 cookie → 302 密钥表单页；crypto.timingSafeEqual；HttpOnly+SameSite=Lax+Secure；CSRF = SameSite=Lax + Origin/Sec-Fetch-Site 校验；导出走 Bearer 备用通道"
+  ],
+  "checks": {
+    "arithmetic_verified_by": "PowerShell（node/python 本机缺失）",
+    "structural_validation": "未运行（捆绑 runtime 为 python）",
+    "html_report": "未渲染（python 缺失，按 skill 规则记录 unfinished-render）",
+    "node_sqlite_spike": "待 D2 实测（本设计唯一可证伪点）；验证项：backup() vs VACUUM INTO 二选一（含 WAL 活动期）/ per-connection PRAGMA / json_each / 迁移执行器 / DAO 8 方法同形度 / 锁定 Node 26 minor 的 Database/Statement 类名与 options；见存储层评审报告 §6 + 复审更新"
+  },
+  "review": {
+    "date": "2026-11-11",
+    "report": "05-系统架构设计/存储层技术评审报告.md",
+    "verdict": "存储层架构维持不变（C1）；R1/R2/R7 已修订本文件，R3/R4/R5/R6/R9/R10 修订 02 文档，R8 修订 07-ADR",
+    "review2": {
+      "date": "2026-11-11",
+      "scope": "五维复审（存储/运行时/前端/API/运维五路子评审合成）",
+      "verdict": "架构维持不变（C1）；本文件按 V5/V6/V7/V13 及复审注更新：Node 24→26、运行时依赖=2（+@hono/node-server）、C2 统一为仅换驱动、RSS 基线校正、限流/cursor/鉴权规格、offsite 与按天去重备份、运行环境节、D2 验证清单更新（backup API 已确认存在）"
+    }
+  }
+}

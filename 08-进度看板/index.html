@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<!-- ============================================================
+  Musicgraphy 2.0 · 实现进度看板（自迭代运维模块）
+  安全姿态：单目录静态三件套，零外部请求（无 CDN/字体/图标），
+  零 eval、零 innerHTML——卡片数据经 textContent 注入，无注入面。
+  卡片更新 = 只改 progress-data.js；本文件与 app.js 为稳定件勿改。
+  视觉 token 来源：07-前端设计包/design-system/musicgraphy/MASTER.md
+  （暖墨 + 琥珀注记于奶油纸面；红仅 destructive）。
+============================================================ -->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 进度看板</title>
+<style>
+  :root {
+    --color-background: #FFFBEB;   /* 奶油纸面 */
+    --color-card: #FFFFFF;
+    --color-foreground: #1C1917;   /* 暖墨 */
+    --color-primary: #292524;
+    --color-on-primary: #FAF6EE;
+    --color-secondary: #78716C;    /* 钢墨 */
+    --color-accent: #D97706;       /* 琥珀注记（大字/装饰） */
+    --color-accent-text: #B45309;  /* 琥珀小字（AA） */
+    --color-muted: #F7F3EA;
+    --color-muted-foreground: #57534E;
+    --color-border: #E9E2D2;
+    --color-destructive: #DC2626;  /* 红仅 destructive */
+    --color-ok: #16A34A;
+    --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    --font-body: 'Inter', system-ui, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'JetBrains Mono', Consolas, 'Courier New', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-body);
+    font-size: 14px; line-height: 1.55;
+    padding: 32px 24px 64px;
+    max-width: 1200px; margin: 0 auto;
+  }
+  header { margin-bottom: 20px; }
+  header h1 {
+    font-family: var(--font-display);
+    font-size: 28px; font-weight: 700; letter-spacing: .01em;
+  }
+  header .line { color: var(--color-muted-foreground); margin-top: 4px; }
+  header .last-sync { color: var(--color-accent-text); font-size: 12px; margin-top: 2px; }
+
+  .bar-wrap { margin: 18px 0 6px; }
+  .bar {
+    height: 10px; background: var(--color-muted);
+    border: 1px solid var(--color-border); border-radius: 6px; overflow: hidden;
+  }
+  #bar-fill { height: 100%; background: var(--color-accent); width: 0; transition: width .3s ease; }
+  #bar-text { font-size: 12px; color: var(--color-muted-foreground); margin-top: 4px; }
+
+  .filters { margin: 14px 0 8px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-btn {
+    font: 12px var(--font-body); padding: 4px 12px; cursor: pointer;
+    background: var(--color-card); color: var(--color-muted-foreground);
+    border: 1px solid var(--color-border); border-radius: 999px;
+  }
+  .filter-btn.on { background: var(--color-primary); color: var(--color-on-primary); border-color: var(--color-primary); }
+
+  .phase { margin-top: 26px; }
+  .phase-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    border-bottom: 2px solid var(--color-primary); padding-bottom: 6px; margin-bottom: 12px; }
+  .phase-title-wrap { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .phase-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+  .phase-window { font-size: 12px; color: var(--color-muted-foreground); }
+  .phase-soft .phase-head { border-bottom-color: var(--color-border); }
+  .phase-soft .phase-title { color: var(--color-muted-foreground); }
+
+  .chip { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 9px;
+    border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  .st-done     { background: #EAF6EE; color: #15803D; border-color: #BBE5C6; }
+  .st-progress { background: #FDF3E3; color: var(--color-accent-text); border-color: #F0D9B5; }
+  .st-pending  { background: var(--color-muted); color: var(--color-muted-foreground); border-color: var(--color-border); }
+  .st-blocked  { background: #FDECEC; color: var(--color-destructive); border-color: #F5C2C2; }
+  .st-watch    { background: #F1EFEA; color: var(--color-secondary); border-color: var(--color-border); }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--color-card); border: 1px solid var(--color-border);
+    border-left: 3px solid var(--color-border);
+    border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .card.st-done     { border-left-color: var(--color-ok); }
+  .card.st-progress { border-left-color: var(--color-accent); }
+  .card.st-blocked  { border-left-color: var(--color-destructive); }
+  .card-top { display: flex; justify-content: space-between; align-items: center; }
+  .tid { font-family: var(--font-mono); font-size: 11px; color: var(--color-secondary); }
+  .card-title { font-size: 14px; font-weight: 600; }
+  .card-desc { font-size: 12px; color: var(--color-muted-foreground); }
+  .card-evidence {
+    font-family: var(--font-mono); font-size: 11px; color: var(--color-muted-foreground);
+    background: var(--color-muted); border: 1px dashed var(--color-border);
+    border-radius: 6px; padding: 6px 8px;
+  }
+  .ev-key { color: var(--color-accent-text); font-weight: 700; margin-right: 6px; }
+  .card-updated { font-size: 11px; color: var(--color-secondary); text-align: right; }
+
+  .notes { display: flex; flex-direction: column; gap: 8px; }
+  .note { border: 1px solid var(--color-border); border-radius: 8px; padding: 8px 12px;
+    font-size: 12px; background: var(--color-card); }
+  .note-warn { border-left: 3px solid var(--color-accent); }
+  .note-info { border-left: 3px solid var(--color-secondary); }
+
+  footer { margin-top: 36px; font-size: 11px; color: var(--color-muted-foreground);
+    border-top: 1px solid var(--color-border); padding-top: 10px; }
+</style>
+</head>
+<body>
+  <header>
+    <h1 id="proj">Musicgraphy 2.0 · 实现进度看板</h1>
+    <div class="line" id="line"></div>
+    <div class="last-sync" id="last-sync"></div>
+    <div class="bar-wrap">
+      <div class="bar"><div id="bar-fill"></div></div>
+      <div id="bar-text"></div>
+    </div>
+    <div class="filters"></div>
+  </header>
+
+  <main id="board"></main>
+
+  <footer>
+    自迭代运维模块：agent 实现完成后须立即更新对应卡片——只改
+    <code>progress-data.js</code>，协议见同目录《看板更新协议.md》与主线仓 <code>AGENTS.md</code>。
+    本页零外部请求、零注入面；双击即可打开。
+  </footer>
+
+  <script src="progress-data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

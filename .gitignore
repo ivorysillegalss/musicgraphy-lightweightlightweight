@@ -1,0 +1,2 @@
+# 会话状态排除（与 tools/rezip-docpackage.ps1 排除口径一致）
+/.zcode/

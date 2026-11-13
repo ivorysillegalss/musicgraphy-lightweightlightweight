@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 · Collection</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand">Musicgraphy<small>COLLECTION</small></div>
+  <div class="searchbar">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input id="global-search" class="input" type="search" role="searchbox"
+      placeholder="搜索专辑、艺术家、Tag，或粘贴链接 / 一句当时……"
+      aria-label="搜索：添加专辑或找回专辑（双意图入口）">
+  </div>
+  <nav class="page-nav" aria-label="设计包页面">
+    <a href="index.html">导航</a>
+    <a href="style-guide.html">设计系统</a>
+    <a href="collection.html" aria-current="page">Collection</a>
+    <a href="add-flow.html">Add 流程</a>
+    <a href="album-detail.html">专辑详情</a>
+    <a href="states.html">三态规范</a>
+  </nav>
+  <a class="btn btn-primary" href="add-flow.html" style="text-decoration:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>
+    添加
+  </a>
+</header>
+
+<main>
+  <!-- C-ECHO：一年前的今天（唯一被允许的主动组件：无推送/单入口/单卡片/确定性时间锚） -->
+  <a class="echo-card" href="album-detail.html" style="text-decoration:none;color:inherit;">
+    <div class="echo-cover g-blue"></div>
+    <div style="flex:1;">
+      <div class="mono echo-date">ON THIS DAY · 一年前的今天</div>
+      <div style="font-weight:600;">一年前的今天，你留下了《Aria》——「青旅的天台，海边的夏天。」</div>
+    </div>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+  </a>
+
+  <!-- 筛选舱：试错式（chips 常驻 / 实时计数 / 无应用重置按钮 / 0 选项隐藏） -->
+  <div class="filter-cabin" role="group" aria-label="渐进式筛选舱">
+    <div class="filter-axes">
+      <div class="filter-axis"><span class="axis-label">Genre</span><div class="chip-list" id="axis-genre"></div></div>
+      <div class="filter-axis"><span class="axis-label">发行年份（Release）</span><div class="chip-list" id="axis-decade"></div></div>
+      <div class="filter-axis"><span class="axis-label">我听的时期（Listened）</span><div class="chip-list" id="axis-era"></div></div>
+      <div class="filter-axis"><span class="axis-label">Favorite</span><div class="chip-list" id="axis-fav"></div></div>
+      <div class="filter-axis"><span class="axis-label">Tag（我的属性）</span><div class="chip-list" id="axis-tag"></div></div>
+      <div class="filter-axis"><span class="axis-label">颜色 · P1 预览</span><div class="chip-list" id="axis-color"></div></div>
+    </div>
+    <div class="active-chips-row" id="active-row" hidden>
+      <span class="axis-label" style="margin-right:4px;">已选</span>
+      <span class="chip-list" id="active-chips"></span>
+      <button class="btn-text" id="clear-all" type="button">移除全部条件</button>
+    </div>
+  </div>
+
+  <!-- 结果状态行：带语义 live region（非裸数字） -->
+  <div class="result-status" id="result-status" role="status" aria-atomic="true">28 张匹配</div>
+
+  <!-- 封面墙（cover-first；真实产品此处为虚拟滚动容器） -->
+  <div class="cover-wall" id="wall"></div>
+
+  <!-- 空态（D-P5：empty 引语式，不卖萌） -->
+  <div id="empty-state" class="state-demo" style="text-align:center; padding: var(--space-3xl);" hidden>
+    <p class="empty-quote" style="margin:0 auto var(--space-md);">没有符合条件的专辑——<br>也许线索还不够，试着移除一个条件。</p>
+    <button class="btn-text" id="clear-all-empty" type="button">移除全部条件</button>
+  </div>
+
+  <p class="small" style="margin-top: var(--space-2xl);">注：本页演示筛选舱与封面墙形态；工程 PRD FR-5 的虚拟滚动、5000 张 &lt;1s 性能预算为工程实现要求。封面为设计稿占位渐变（真实产品 = 数据源封面图 + WebP/AVIF + lazy loading）。试试经典找回路径：Genre「Electronic」→ 我听的时期「2010–2013」→ 颜色「蓝」。</p>
+</main>
+
+<script>
+/* ---------- 设计稿数据（28 张） ---------- */
+const ALBUMS = [
+  {t:'Aria',a:'Ryuichi Sakamoto',y:1984,d:'80年代',era:'2010–2013',g:'Electronic',tags:['夜晚','通勤'],c:'blue',fav:true},
+  {t:'Selected Ambient Works 85-92',a:'Aphex Twin',y:1992,d:'90年代',era:'2010–2013',g:'Electronic',tags:['夜晚'],c:'blue'},
+  {t:'Geogaddi',a:'Boards of Canada',y:2002,d:'00年代',era:'2010–2013',g:'Electronic',tags:['夜晚','大学'],c:'indigo'},
+  {t:'Untrue',a:'Burial',y:2007,d:'00年代',era:'2014–2017',g:'Electronic',tags:['夜晚','通勤'],c:'gray'},
+  {t:'Discovery',a:'Daft Punk',y:2001,d:'00年代',era:'2018–2020',g:'Electronic',tags:['夏天','通勤'],c:'magenta'},
+  {t:'Music Has the Right to Children',a:'Boards of Canada',y:1998,d:'90年代',era:'2014–2017',g:'Electronic',tags:['大学'],c:'green'},
+  {t:'In Rainbows',a:'Radiohead',y:2007,d:'00年代',era:'2018–2020',g:'Rock',tags:['夜晚','大学'],c:'black',fav:true},
+  {t:'Unknown Pleasures',a:'Joy Division',y:1979,d:'70年代',era:'2014–2017',g:'Rock',tags:['夜晚'],c:'black'},
+  {t:'Murmur',a:'R.E.M.',y:1983,d:'80年代',era:'2018–2020',g:'Rock',tags:['大学','通勤'],c:'white'},
+  {t:'Turn On the Bright Lights',a:'Interpol',y:2002,d:'00年代',era:'2010–2013',g:'Rock',tags:['夜晚','通勤'],c:'red'},
+  {t:'Kind of Blue',a:'Miles Davis',y:1959,d:'50年代',era:'2014–2017',g:'Jazz',tags:['夜晚','咖啡馆'],c:'blue'},
+  {t:'A Love Supreme',a:'John Coltrane',y:1965,d:'60年代',era:'2021–2023',g:'Jazz',tags:['清晨'],c:'amber'},
+  {t:'Waltz for Debby',a:'Bill Evans Trio',y:1962,d:'60年代',era:'2018–2020',g:'Jazz',tags:['咖啡馆','夏天'],c:'white'},
+  {t:'The Low End Theory',a:'A Tribe Called Quest',y:1991,d:'90年代',era:'2014–2017',g:'Hip-Hop',tags:['通勤','大学'],c:'red'},
+  {t:'Madvillainy',a:'Madvillain',y:2004,d:'00年代',era:'2021–2023',g:'Hip-Hop',tags:['夜晚'],c:'brown'},
+  {t:'Blonde',a:'Frank Ocean',y:2016,d:'10年代',era:'2021–2023',g:'Pop',tags:['夏天','旅行'],c:'magenta',fav:true},
+  {t:'Gymnopédies & Gnossiennes',a:'Erik Satie',y:1993,d:'90年代',era:'2024–2026',g:'Classical',tags:['深夜','咖啡馆'],c:'gray'},
+  {t:'The Goldberg Variations',a:'Glenn Gould',y:1955,d:'50年代',era:'2024–2026',g:'Classical',tags:['深夜'],c:'black'},
+  {t:'Sleep',a:'Max Richter',y:2015,d:'10年代',era:'2021–2023',g:'Classical',tags:['夜晚','深夜'],c:'indigo'},
+  {t:'Ambient 1: Music for Airports',a:'Brian Eno',y:1978,d:'70年代',era:'2018–2020',g:'Ambient',tags:['旅行','清晨'],c:'white'},
+  {t:'Selected Ambient Works Volume II',a:'Aphex Twin',y:1994,d:'90年代',era:'2014–2017',g:'Ambient',tags:['深夜'],c:'blue'},
+  {t:'Substrata',a:'Biosphere',y:1997,d:'90年代',era:'2021–2023',g:'Ambient',tags:['冬天','旅行'],c:'teal'},
+  {t:'Melodrama',a:'Lorde',y:2017,d:'10年代',era:'2021–2023',g:'Pop',tags:['夏天'],c:'magenta'},
+  {t:'Fetch the Bolt Cutters',a:'Fiona Apple',y:2020,d:'20年代',era:'2021–2023',g:'Pop',tags:['清晨'],c:'yellow'},
+  {t:'Punisher',a:'Phoebe Bridgers',y:2020,d:'20年代',era:'2024–2026',g:'Pop',tags:['冬天'],c:'purple'},
+  {t:'For Emma, Forever Ago',a:'Bon Iver',y:2008,d:'00年代',era:'2018–2020',g:'Folk',tags:['冬天'],c:'white'},
+  {t:'Harvest',a:'Neil Young',y:1972,d:'70年代',era:'2010–2013',g:'Folk',tags:['清晨'],c:'brown'},
+  {t:'Blue',a:'Joni Mitchell',y:1971,d:'70年代',era:'2014–2017',g:'Folk',tags:['咖啡馆'],c:'blue',fav:true},
+];
+
+const ERAS = ['2010–2013','2014–2017','2018–2020','2021–2023','2024–2026'];
+const DECADES = ['50年代','60年代','70年代','80年代','90年代','00年代','10年代','20年代'];
+const COLORS = { red:'红',orange:'橙',amber:'琥珀',yellow:'黄',lime:'黄绿',green:'绿',teal:'青',blue:'蓝',indigo:'靛',purple:'紫',magenta:'品红',brown:'棕',gray:'灰',black:'黑',white:'白' };
+const active = { genre:new Set(), decade:new Set(), era:new Set(), tag:new Set(), color:new Set(), fav:false };
+let query = '';
+
+const matches = (a) =>
+  (!active.genre.size || active.genre.has(a.g)) &&
+  (!active.decade.size || active.decade.has(a.d)) &&
+  (!active.era.size || active.era.has(a.era)) &&
+  (!active.color.size || active.color.has(a.c)) &&
+  (!active.tag.size || a.tags.some(t => active.tag.has(t))) &&
+  (!active.fav || a.fav) &&
+  (!query || (a.t+' '+a.a+' '+a.tags.join(' ')).toLowerCase().includes(query));
+
+/* 轴排除计数：统计某 chip 在"其余条件生效"下的命中数（facet 计数惯例） */
+function countExcept(axis, pred) {
+  const bak = { genre:[...active.genre], decade:[...active.decade], era:[...active.era], tag:[...active.tag], color:[...active.color], fav: active.fav };
+  if (axis === 'fav') active.fav = false; else active[axis] = new Set();
+  const n = ALBUMS.filter(a => matches(a) && pred(a)).length;
+  Object.assign(active, { fav: bak.fav });
+  active.genre = new Set(bak.genre); active.decade = new Set(bak.decade);
+  active.era = new Set(bak.era); active.tag = new Set(bak.tag); active.color = new Set(bak.color);
+  return n;
+}
+
+const heartSvg = (size=14, filled=true) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" ${filled?'fill="currentColor"':'fill="none" stroke="currentColor" stroke-width="1.75"'} aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>`;
+
+function chip(axis, value, label, count) {
+  const isFav = axis === 'fav';
+  const on = isFav ? active.fav : active[axis].has(value);
+  const hidden = count === 0 && !on;
+  const sw = axis === 'color' ? `<span class="chip-swatch" style="background:var(--swatch-${value});"></span>` : '';
+  return `<button class="chip" data-axis="${axis}" data-value="${value}" aria-pressed="${on}" ${hidden?'hidden':''}>${sw}${label}${isFav?'':' <span class="count">('+count+')</span>'}</button>`;
+}
+
+function renderAxes() {
+  document.getElementById('axis-genre').innerHTML =
+    [...new Set(ALBUMS.map(a=>a.g))].map(g => chip('genre', g, g, countExcept('genre', a=>a.g===g))).join('');
+  document.getElementById('axis-decade').innerHTML =
+    DECADES.map(d => chip('decade', d, d, countExcept('decade', a=>a.d===d))).join('');
+  document.getElementById('axis-era').innerHTML =
+    ERAS.map(e => chip('era', e, e, countExcept('era', a=>a.era===e))).join('');
+  document.getElementById('axis-tag').innerHTML =
+    [...new Set(ALBUMS.flatMap(a=>a.tags))].sort().map(t => chip('tag', t, t, countExcept('tag', a=>a.tags.includes(t)))).join('');
+  document.getElementById('axis-color').innerHTML =
+    Object.keys(COLORS).map(c => chip('color', c, COLORS[c], countExcept('color', a=>a.c===c))).join('');
+  document.getElementById('axis-fav').innerHTML =
+    chip('fav', '1', heartSvg(13)+' Favorite', countExcept('fav', a=>a.fav));
+}
+
+function renderActiveRow() {
+  const row = document.getElementById('active-row');
+  const chips = [];
+  for (const [axis,label] of [['genre',''],['decade',''],['era',''],['tag',''],['color','']]) {
+    for (const v of active[axis]) {
+      const text = axis==='color' ? COLORS[v] : v;
+      chips.push(`<span class="chip" aria-pressed="true">${text}<button class="chip-x" data-remove="${axis}" data-value="${v}" aria-label="移除条件 ${text}"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>`);
+    }
+  }
+  if (active.fav) chips.push(`<span class="chip" aria-pressed="true">${heartSvg(13)} Favorite<button class="chip-x" data-remove="fav" data-value="1" aria-label="移除条件 Favorite"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>`);
+  row.hidden = chips.length === 0;
+  document.getElementById('active-chips').innerHTML = chips.join('');
+}
+
+function renderWall() {
+  const list = ALBUMS.filter(matches);
+  const wall = document.getElementById('wall');
+  const empty = document.getElementById('empty-state');
+  document.getElementById('result-status').innerHTML = `<strong>${list.length} 张匹配</strong> · RECOGNITION VIEW`;
+  empty.hidden = list.length !== 0;
+  wall.hidden = list.length === 0;
+  wall.innerHTML = list.map(a => `
+    <div class="cover-card" tabindex="0" role="button" aria-label="${a.t} · ${a.a}${a.fav?' · Favorite':''}">
+      <div class="cover g-${a.c}">
+        <div class="cover-meta"><span class="cover-title">${a.t}</span><span class="cover-artist">${a.a.toUpperCase()} · ${a.y}</span></div>
+        ${a.fav ? `<svg class="cover-fav" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>` : ''}
+        <span class="cover-dot" style="background:var(--swatch-${a.c});" title="封面主色：${COLORS[a.c]}"></span>
+      </div>
+    </div>`).join('');
+}
+
+function render() { renderAxes(); renderActiveRow(); renderWall(); }
+
+/* ---------- 交互绑定 ---------- */
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('.chip[data-axis]');
+  if (c) {
+    const { axis, value } = c.dataset;
+    if (axis === 'fav') active.fav = !active.fav;
+    else active[axis].has(value) ? active[axis].delete(value) : active[axis].add(value);
+    render();
+    return;
+  }
+  const x = e.target.closest('[data-remove]');
+  if (x) {
+    const { remove: axis, value } = x.dataset;
+    if (axis === 'fav') active.fav = false; else active[axis].delete(value);
+    render();
+    return;
+  }
+  if (e.target.closest('#clear-all, #clear-all-empty')) {
+    for (const k of ['genre','decade','era','tag','color']) active[k].clear();
+    active.fav = false; query = '';
+    document.getElementById('global-search').value = '';
+    render();
+  }
+});
+
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'global-search') {
+    query = e.target.value.trim().toLowerCase();
+    render();
+  }
+});
+
+/* P1-8 键盘流：/ 聚焦搜索 */
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== document.getElementById('global-search')) {
+    e.preventDefault();
+    document.getElementById('global-search').focus();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

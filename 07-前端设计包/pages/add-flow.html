@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 · 记录流程（Add）</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  .flow-panel { background: var(--color-card); border: var(--border-hairline); border-radius: var(--radius-lg); padding: var(--space-lg); margin-bottom: var(--space-lg); }
+  .flow-label { margin-bottom: var(--space-md); }
+  .step-note { display: flex; gap: var(--space-md); align-items: baseline; margin-top: var(--space-md); }
+  .step-note .kbd { flex: none; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand">Musicgraphy<small>ADD FLOW</small></div>
+  <nav class="page-nav" aria-label="设计包页面">
+    <a href="index.html">导航</a>
+    <a href="style-guide.html">设计系统</a>
+    <a href="collection.html">Collection</a>
+    <a href="add-flow.html" aria-current="page">Add 流程</a>
+    <a href="album-detail.html">专辑详情</a>
+    <a href="states.html">三态规范</a>
+  </nav>
+</header>
+
+<main>
+  <div class="section-title">
+    <h1>记录流程</h1>
+    <span class="mono">PG-ADD · FR-1 三捷径 + 确认层三件套 · 默认态 = 完成态</span>
+  </div>
+  <p class="small" style="margin-bottom: var(--space-xl);">记录的理想键盘路径 ≤5s：粘贴 / 零输入候选 → <span class="kbd">Enter</span> → <span class="kbd">F</span> → <span class="kbd">Esc</span>。「先添加、稍后补」合法——一切补充字段不阻塞关闭。</p>
+
+  <!-- 路径 A：零输入候选 -->
+  <section class="flow-panel">
+    <div class="mono flow-label" style="color:var(--color-accent-text);">路径 A · 零输入候选（搜索框焦点即显示）</div>
+    <div class="searchbar" style="max-width:640px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input class="input" value="" placeholder="搜索专辑、艺术家、Tag，或粘贴链接 / 一句当时……" aria-label="搜索演示（零输入候选）">
+    </div>
+    <div style="margin-top: var(--space-md); display:flex; flex-direction:column; gap:2px; max-width:640px;">
+      <div class="candidate selected" tabindex="0" role="button">
+        <div class="candidate-cover g-blue"></div>
+        <div style="flex:1;"><div style="font-weight:600;">Aria</div><div class="small">Ryuichi Sakamoto · 1984 · 最近添加的艺术家</div></div>
+        <span class="in-collection">IN YOUR COLLECTION</span>
+      </div>
+      <div class="candidate" tabindex="0" role="button">
+        <div class="candidate-cover g-indigo"></div>
+        <div style="flex:1;"><div style="font-weight:600;">Sleep</div><div class="small">Max Richter · 2015 · 最近搜索</div></div>
+      </div>
+      <div class="candidate" tabindex="0" role="button">
+        <div class="candidate-cover g-brown"></div>
+        <div style="flex:1;"><div style="font-weight:600;">Harvest</div><div class="small">Neil Young · 1972 · 最近添加的艺术家</div></div>
+      </div>
+    </div>
+    <div class="step-note"><span class="kbd">↓</span><span class="small">方向键选择 · <span class="kbd">Enter</span> 添加首候选 · 一次点击替代一次打字</span></div>
+  </section>
+
+  <!-- 路径 B：粘贴识别 + 重复转化 -->
+  <section class="flow-panel">
+    <div class="mono flow-label" style="color:var(--color-accent-text);">路径 B · 粘贴识别（URL / “Artist - Album” 文本串）</div>
+    <input class="input" style="max-width:640px; font-family:var(--font-meta); font-size:13px;" value="https://open.spotify.com/album/10v312bRZldYDcL0LZmf2A" readonly aria-label="粘贴识别演示">
+    <div style="margin-top: var(--space-md); display:flex; align-items:center; gap: var(--space-md); max-width:640px;">
+      <div class="candidate-cover g-magenta" style="width:56px;height:56px;"></div>
+      <div style="flex:1;"><div style="font-weight:600;">Blonde</div><div class="small">Frank Ocean · 2016 · 识别自链接</div></div>
+      <span class="in-collection">IN YOUR COLLECTION</span>
+    </div>
+    <div class="dup-banner" style="margin-top: var(--space-md); max-width:640px;">
+      <div style="flex:1; min-width: 220px;">
+        <div style="font-weight:600;">已在你 Collection 中</div>
+        <div class="small">集合语义：重复添加不会产生第二条记录（FR-4 · D2）。</div>
+      </div>
+      <button class="btn btn-secondary" onclick="location.href='album-detail.html'">去补线索</button>
+      <button class="btn btn-primary">又听了一次</button>
+    </div>
+  </section>
+
+  <!-- 路径 C：确认层弹层（可交互） -->
+  <section class="flow-panel">
+    <div class="mono flow-label" style="color:var(--color-accent-text);">路径 C · 确认层三件套（Add 弹层 · 点击体验）</div>
+    <button class="btn btn-primary" id="open-add-demo">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg>
+      打开 Add 弹层
+    </button>
+    <div class="step-note"><span class="kbd">Esc</span><span class="small">关闭弹层 · 一切补充字段不阻塞关闭 · 失败 toast 不阻塞关闭</span></div>
+  </section>
+
+  <!-- 键盘流标注 -->
+  <section class="flow-panel">
+    <div class="mono flow-label" style="color:var(--color-accent-text);">P1-8 · 键盘流（高频记录者成串记录，单次 ≤3s）</div>
+    <div class="chip-list">
+      <span class="chip" style="cursor:default"><span class="kbd">/</span> 聚焦搜索</span>
+      <span class="chip" style="cursor:default"><span class="kbd">Enter</span> 添加首候选</span>
+      <span class="chip" style="cursor:default"><span class="kbd">F</span> 快速 Favorite</span>
+      <span class="chip" style="cursor:default"><span class="kbd">Esc</span> 关闭不阻塞</span>
+    </div>
+  </section>
+</main>
+
+<!-- Add 弹层 -->
+<div class="modal-overlay" id="add-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-modal-title">
+    <button class="modal-close" id="close-add" aria-label="关闭（Esc）">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="mono" style="color:var(--color-accent-text); margin-bottom: var(--space-md);" id="add-modal-title">ADD TO COLLECTION · 确认层</div>
+
+    <div class="candidate selected" style="margin-bottom: var(--space-lg);">
+      <div class="candidate-cover g-blue" style="width:56px;height:56px;"></div>
+      <div style="flex:1;"><div style="font-weight:600;">Aria</div><div class="small">Ryuichi Sakamoto · 1984 · Electronic</div></div>
+    </div>
+
+    <div style="display:flex; gap: var(--space-md); align-items:center; margin-bottom: var(--space-lg);">
+      <button class="btn btn-secondary" id="fav-toggle" aria-pressed="false" style="min-width:120px;">
+        <svg id="fav-heart" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+        Favorite
+      </button>
+      <div style="flex:1;">
+        <label class="field-label" for="listen-select">听的时期（listenedAt，可跳过）</label>
+        <div class="listen-time" id="listen-select" role="radiogroup" aria-label="听的时期">
+          <button class="chip" aria-pressed="true" style="cursor:pointer">刚刚</button>
+          <button class="chip" aria-pressed="false" style="cursor:pointer">今年</button>
+          <button class="chip" aria-pressed="false" style="cursor:pointer">去年</button>
+          <button class="chip" aria-pressed="false" style="cursor:pointer">更早…</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: var(--space-lg);">
+      <span class="field-label">Tag（我的属性 · 自动补全防同义分裂）</span>
+      <div class="tag-input-wrap" id="tag-wrap">
+        <span class="tag-chip">夜晚<button aria-label="移除 Tag 夜晚" data-tag-remove="夜晚"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+        <input class="input" style="border:none; box-shadow:none; min-height:28px; flex:1; padding:4px;" placeholder="输入或选择…（如：海边）" aria-label="输入 Tag">
+      </div>
+      <div class="tag-suggest" style="margin-top: var(--space-sm);">
+        最近使用：
+        <button data-tag-add="夏天">夏天</button>
+        <button data-tag-add="海边">海边</button>
+        <button data-tag-add="通勤">通勤</button>
+        <button data-tag-add="大学">大学</button>
+      </div>
+    </div>
+
+    <details class="note-fold" style="margin-bottom: var(--space-xl);">
+      <summary>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>
+        为什么留下它？留一句当时……（可跳过，≤2 次点击）
+      </summary>
+      <textarea placeholder="例：青旅的天台，海边的夏天。" aria-label="为什么留下它（Note）"></textarea>
+    </details>
+
+    <div style="display:flex; gap: var(--space-md); justify-content:flex-end;">
+      <button class="btn btn-secondary" id="close-add-2">稍后补</button>
+      <button class="btn btn-primary" id="confirm-add">添加（默认即完成）</button>
+    </div>
+    <p class="small" style="margin-top: var(--space-md); text-align:right;">落库后可在详情页随时补线索——“先添加、稍后补”合法。</p>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden>
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+  <span id="toast-text">ADDED · ARIA → COLLECTION</span>
+</div>
+
+<script>
+  const modal = document.getElementById('add-modal');
+  const openBtns = [document.getElementById('open-add-demo'), document.getElementById('open-add')];
+  const toast = document.getElementById('toast');
+
+  function openModal(){ modal.hidden = false; modal.querySelector('#fav-toggle').focus(); }
+  function closeModal(){ modal.hidden = true; }
+
+  openBtns.forEach(b => b && b.addEventListener('click', openModal));
+  document.getElementById('close-add').addEventListener('click', closeModal);
+  document.getElementById('close-add-2').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal.hidden) closeModal();
+    if ((e.key === 'f' || e.key === 'F') && !modal.hidden) {
+      const t = document.getElementById('fav-toggle');
+      t.click();
+    }
+  });
+
+  document.getElementById('fav-toggle').addEventListener('click', function(){
+    const on = this.getAttribute('aria-pressed') === 'true';
+    this.setAttribute('aria-pressed', String(!on));
+    document.getElementById('fav-heart').setAttribute('fill', on ? 'none' : 'currentColor');
+    this.style.borderColor = on ? '' : 'var(--color-accent)';
+    this.style.color = on ? '' : 'var(--color-accent-text)';
+  });
+
+  document.getElementById('listen-select').addEventListener('click', (e) => {
+    const c = e.target.closest('.chip'); if (!c) return;
+    document.querySelectorAll('#listen-select .chip').forEach(x => x.setAttribute('aria-pressed','false'));
+    c.setAttribute('aria-pressed','true');
+  });
+
+  document.getElementById('tag-wrap').addEventListener('click', (e) => {
+    const r = e.target.closest('[data-tag-remove]');
+    if (r) r.closest('.tag-chip').remove();
+  });
+  document.querySelectorAll('[data-tag-add]').forEach(b => b.addEventListener('click', () => {
+    const tag = b.dataset.tagAdd;
+    if (document.querySelector(`[data-tag-remove="${tag}"]`)) return;
+    const chipEl = document.createElement('span');
+    chipEl.className = 'tag-chip';
+    chipEl.innerHTML = `${tag}<button aria-label="移除 Tag ${tag}" data-tag-remove="${tag}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>`;
+    document.getElementById('tag-wrap').querySelector('input').before(chipEl);
+  }));
+
+  document.getElementById('confirm-add').addEventListener('click', () => {
+    closeModal();
+    toast.hidden = false;
+    setTimeout(() => { toast.hidden = true; }, 2400);
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 · 前端设计包导航</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  .hero { padding: var(--space-3xl) 0 var(--space-2xl); }
+  .hero p { max-width: 56ch; color: var(--color-muted-foreground); margin-top: var(--space-md); }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--space-md); }
+  .nav-card { display: block; background: var(--color-card); border: var(--border-hairline); border-radius: var(--radius-lg); padding: var(--space-lg); text-decoration: none; color: var(--color-foreground); transition: box-shadow var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
+  .nav-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .nav-card h3 { margin-bottom: var(--space-sm); }
+  .nav-card p { font-size: 13px; color: var(--color-muted-foreground); }
+  .nav-card .mono { display: block; margin-top: var(--space-md); color: var(--color-accent-text); }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand">Musicgraphy<small>DESIGN PACKAGE · 2.0</small></div>
+  <nav class="page-nav" aria-label="设计包页面">
+    <a href="index.html" aria-current="page">导航</a>
+    <a href="style-guide.html">设计系统</a>
+    <a href="collection.html">Collection</a>
+    <a href="add-flow.html">Add 流程</a>
+    <a href="album-detail.html">专辑详情</a>
+    <a href="states.html">三态规范</a>
+  </nav>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="mono">FRONTEND DESIGN PACKAGE · 基于 ui-ux-pro-max skill 工作流</div>
+    <h1 class="display" style="margin-top: var(--space-md);">一座安静的纸面档案馆。</h1>
+    <p>封面是唯一的主角，墨色负责秩序，琥珀负责「当时」。以下页面为本设计包的基础设计页面（静态 HTML，双击可开，零依赖评审）——设计规格见《01-设计系统PRD.md》，设计系统 Source of Truth 见 <code style="font-family:var(--font-meta);font-size:13px;color:var(--color-accent-text);">design-system/musicgraphy/MASTER.md</code>。</p>
+  </section>
+
+  <section class="section">
+    <div class="card-grid">
+      <a class="nav-card" href="style-guide.html">
+        <h3>设计系统总览</h3>
+        <p>三层 token、配色、字体栈、组件规格与深色模式预案——MASTER.md 的可视化。</p>
+        <span class="mono">PG-SYSTEM</span>
+      </a>
+      <a class="nav-card" href="collection.html">
+        <h3>Collection 主页</h3>
+        <p>封面墙 + 试错式筛选舱 + 实时计数 + 回响卡片。可交互：点击 chips 体验「还剩 N 张」。</p>
+        <span class="mono">PG-COLLECTION · FR-2/3/5</span>
+      </a>
+      <a class="nav-card" href="add-flow.html">
+        <h3>记录流程</h3>
+        <p>零输入候选、粘贴识别、确认层三件套、重复转化提示——默认态即完成态。</p>
+        <span class="mono">PG-ADD · FR-1/4</span>
+      </a>
+      <a class="nav-card" href="album-detail.html">
+        <h3>专辑详情</h3>
+        <p>外部元数据区 × 个人记忆条的双区布局、第一人称「当时」、联想入口。</p>
+        <span class="mono">PG-DETAIL · P1-2/5</span>
+      </a>
+      <a class="nav-card" href="states.html">
+        <h3>三态规范页</h3>
+        <p>全产品 9 组 loading / empty / error 三态画廊与文案基调。</p>
+        <span class="mono">PG-STATES · FR-6</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="state-demo">
+      <div class="mono" style="margin-bottom: var(--space-md);">DESIGN PRINCIPLES · 六条设计原则（可检验）</div>
+      <div class="chip-list" style="gap: var(--space-sm);">
+        <span class="chip" style="cursor:default">D-P1 封面即内容</span>
+        <span class="chip" style="cursor:default">D-P2 纸面档案室</span>
+        <span class="chip" style="cursor:default">D-P3 试错式筛选舱</span>
+        <span class="chip" style="cursor:default">D-P4 零打扰动效</span>
+        <span class="chip" style="cursor:default">D-P5 三态完备</span>
+        <span class="chip" style="cursor:default">D-P6 可访问性底线</span>
+      </div>
+      <p class="small" style="margin-top: var(--space-md);">红色只出现在破坏性操作；「应用/重置」按钮不存在；推荐组件不存在；档案可以主动，但不可以殷勤。</p>
+    </div>
+  </section>
+</main>
+
+<footer style="padding: var(--space-2xl) var(--space-xl); border-top: var(--border-hairline);">
+  <p class="small">Musicgraphy 2.0 前端设计包 · v1.0 · 2026-11-11 · 上游：《产品理念终稿》《02-变现文档包/01-PRD》 · 方法论：ui-ux-pro-max skill v2.15.0</p>
+</footer>
+</body>
+</html>

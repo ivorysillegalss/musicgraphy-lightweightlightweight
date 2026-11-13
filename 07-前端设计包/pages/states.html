@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 · 三态规范页</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  .tri { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-md); }
+  @media (max-width: 860px) { .tri { grid-template-columns: 1fr; } }
+  .tri-cell { background: var(--color-background); border: var(--border-hairline); border-radius: var(--radius-md); padding: var(--space-md); min-height: 190px; display: flex; flex-direction: column; gap: var(--space-sm); }
+  .tri-cell .mono { font-size: 10px; }
+  .tri-cell .demo { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: var(--space-sm); }
+  .mini-wall { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .mini-wall .skeleton { border-radius: var(--radius-cover); }
+  .mini-covers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .mini-covers .cover { box-shadow: var(--shadow-sm); }
+  .mini-covers .cover-meta { display: none; }
+  .state-quote { font-family: var(--font-display); font-size: 16px; line-height: 1.45; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand">Musicgraphy<small>STATES</small></div>
+  <nav class="page-nav" aria-label="设计包页面">
+    <a href="index.html">导航</a>
+    <a href="style-guide.html">设计系统</a>
+    <a href="collection.html">Collection</a>
+    <a href="add-flow.html">Add 流程</a>
+    <a href="album-detail.html">专辑详情</a>
+    <a href="states.html" aria-current="page">三态规范</a>
+  </nav>
+</header>
+
+<main>
+  <div class="section-title">
+    <h1>三态规范页</h1>
+    <span class="mono">PG-STATES · FR-6 记录可靠性 · 全路径 loading / empty / error</span>
+  </div>
+  <p class="small" style="margin-bottom: var(--space-xl);">每个数据区组件交付三态是完成定义的一部分（D-P5）。文案基调：档案馆口吻、不卖萌、错误时说清「你的数据没丢」、失败不阻塞关闭。</p>
+
+  <!-- 1 封面墙 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">01 · 封面墙（Collection 主视图）</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING</span><div class="demo"><div class="mini-wall"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 新档案</span><div class="demo"><p class="state-quote">档案是空的——听到值得留下的专辑，就把它记下来。</p><button class="btn btn-primary" style="align-self:flex-start;">记录第一张</button></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><div class="error-strip"><div style="font-weight:600;">封面服务暂时不可用</div><div class="small">已记录的数据都在本地，不受影响。</div></div><button class="btn btn-secondary" style="align-self:flex-start;">重试</button></div></div>
+    </div>
+  </section>
+
+  <!-- 2 搜索结果 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">02 · 搜索 / 筛选结果</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING</span><div class="demo"><div class="mini-wall"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div><span class="small">计数行：正在统计…</span></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 无结果</span><div class="demo"><p class="state-quote">没有符合条件的专辑——也许线索还不够，试着移除一个条件。</p><button class="btn-text" style="align-self:flex-start;">移除全部条件</button></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><div class="error-strip"><div style="font-weight:600;">筛选查询失败</div><div class="small">你的筛选条件已保留，重试即可继续。</div></div><button class="btn btn-secondary" style="align-self:flex-start;">重试</button></div></div>
+    </div>
+  </section>
+
+  <!-- 3 回响区 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">03 · 回响区（一年前的今天 · 无周年记录则整区不渲染）</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING</span><div class="demo"><div class="skeleton" style="aspect-ratio:auto; height:64px; border-radius:var(--radius-md);"></div></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 无周年记录</span><div class="demo"><p class="small">今天没有周年记录——区域不渲染，不留占位、不产生期待。（四约束：无推送 / 单入口 / 单卡片 / 确定性时间锚）</p></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><p class="small">回响计算失败时静默降级：区域不渲染（回响是馈赠，不是功能承诺——不因失败打扰）。</p></div></div>
+    </div>
+  </section>
+
+  <!-- 4 Add 候选 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">04 · Add 候选（搜索识别）</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING · 识别中</span><div class="demo"><div class="candidate"><div class="candidate-cover skeleton" style="aspect-ratio:auto;"></div><div style="flex:1;"><div class="skeleton" style="aspect-ratio:auto;height:14px;width:60%;"></div></div></div><span class="small">正在识别链接…</span></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 无候选</span><div class="demo"><p class="state-quote">没有匹配的专辑——试试粘贴链接，或换个说法。</p><span class="small">观察信号：搜索失败率 → 手动建卡兜底（观察池红线预锁）</span></div></div>
+      <div class="tri-cell"><span class="mono">ERROR · 元数据源失败</span><div class="demo"><div class="error-strip"><div style="font-weight:600;">元数据源没有回应</div><div class="small">多源降级链已尝试 3 个数据源。失败不阻塞关闭——可以先关闭，稍后再试。</div></div></div></div>
+    </div>
+  </section>
+
+  <!-- 5 Tag 补全 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">05 · Tag 自动补全</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING</span><div class="demo"><div class="skeleton" style="aspect-ratio:auto; height:32px; width:70%; border-radius:999px;"></div></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 新 Tag</span><div class="demo"><span class="small">输入「海边」→ 无既有匹配：回车创建新 Tag（自由语言是产品立场，不设官方词表）。</span></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><p class="small">补全失败时输入仍可用（本地已有 tag 列表兜底）——防同义分裂的防线不能因网络失败而消失。</p></div></div>
+    </div>
+  </section>
+
+  <!-- 6 导出 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">06 · 档案导出（P1-3 · 永久免费）</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING · 打包中</span><div class="demo"><span class="small">正在打包 5,000 条记录…（本地完成，无上传）</span></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 空档案</span><div class="demo"><p class="small">档案还是空的——导出会得到一个合法但空的数据文件（导出永远可用，含空档案）。</p></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><div class="error-strip"><div style="font-weight:600;">导出失败</div><div class="small">你的数据没有丢失，只是没有打包成功——重试即可。</div></div></div></div>
+    </div>
+  </section>
+
+  <!-- 7 主色提取 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">07 · 封面主色提取（D3 · P0 数据基建）</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING · 提取中</span><div class="demo"><span class="small">记录时顺手提取（成本 ≈ 0），存量封面可批量回填。</span></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 提取失败/无封面</span><div class="demo"><p class="small">降级为「无色板」：色点不渲染，色板筛选不含此记录——不冒充、不猜色。</p></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><p class="small">提取失败不阻塞落库（记录可靠性优先）；后台补算，补算完成后色点自动出现。</p></div></div>
+    </div>
+  </section>
+
+  <!-- 8 联想入口 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">08 · 联想入口（详情页 · P1-5）</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING</span><div class="demo"><div class="mini-wall"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div></div>
+      <div class="tri-cell"><span class="mono">EMPTY · 无同类</span><div class="demo"><p class="small">某组联想（如「同天添加的」）无结果 → 该组不渲染，只显示有内容的组。</p></div></div>
+      <div class="tri-cell"><span class="mono">ERROR</span><div class="demo"><p class="small">联想计算失败 → 整个区域不渲染（联想是赠品，不是承诺）。</p></div></div>
+    </div>
+  </section>
+
+  <!-- 9 详情页 -->
+  <section class="section state-demo">
+    <div class="mono" style="margin-bottom: var(--space-md);">09 · 专辑详情页</div>
+    <div class="tri">
+      <div class="tri-cell"><span class="mono">LOADING</span><div class="demo"><div style="display:flex;gap:16px;"><div class="skeleton" style="width:120px; flex:none;"></div><div style="flex:1; display:flex; flex-direction:column; gap:8px;"><div class="skeleton" style="aspect-ratio:auto; height:20px; width:60%;"></div><div class="skeleton" style="aspect-ratio:auto; height:12px; width:40%;"></div><div class="skeleton" style="aspect-ratio:auto; height:12px; width:80%;"></div></div></div></div></div>
+      <div class="tri-cell"><span class="mono">ERROR · 404</span><div class="demo"><p class="state-quote">这条记录不存在——它可能已被移除。</p><button class="btn btn-secondary" style="align-self:flex-start;">返回 Collection</button></div></div>
+      <div class="tri-cell"><span class="mono">ERROR · 元数据刷新失败</span><div class="demo"><div class="error-strip"><div style="font-weight:600;">公共元数据刷新失败</div><div class="small">你的个人记录（Note / Tag / 听期）完好——公共数据可稍后重试更新。</div></div></div></div>
+    </div>
+  </section>
+
+  <p class="small">9 组三态 = D-P5 验收基准（PRD §6.4）。三共同规则：① loading 保持布局稳定（防 CLS）；② empty 给唯一恢复动作、档案馆口吻；③ error 永远说明「你的数据没丢」+ 重试入口。</p>
+</main>
+</body>
+</html>

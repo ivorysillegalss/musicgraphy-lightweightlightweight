@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Musicgraphy 2.0 · 设计系统总览</title>
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+  .spec-row { display: flex; align-items: center; gap: var(--space-md); padding: var(--space-md) 0; border-bottom: var(--border-hairline); flex-wrap: wrap; }
+  .type-label { width: 150px; flex: none; }
+  .dark-demo { background: var(--color-background); color: var(--color-foreground); border-radius: var(--radius-lg); border: var(--border-hairline); padding: var(--space-lg); }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="brand">Musicgraphy<small>DESIGN SYSTEM</small></div>
+  <nav class="page-nav" aria-label="设计包页面">
+    <a href="index.html">导航</a>
+    <a href="style-guide.html" aria-current="page">设计系统</a>
+    <a href="collection.html">Collection</a>
+    <a href="add-flow.html">Add 流程</a>
+    <a href="album-detail.html">专辑详情</a>
+    <a href="states.html">三态规范</a>
+  </nav>
+</header>
+
+<main>
+  <div class="section-title">
+    <h1>设计系统总览</h1>
+    <span class="mono">PG-SYSTEM · MASTER.md 可视化</span>
+  </div>
+
+  <!-- 1. 色彩 -->
+  <section class="section">
+    <div class="section-title"><h2>1 · Semantic 色板</h2><span class="mono">纸面 · 墨章 · 琥珀注记 · 红 = 破坏性唯一席位</span></div>
+    <div class="swatch-row" id="semantic-swatches"></div>
+    <table class="token-table" style="margin-top: var(--space-lg);">
+      <thead><tr><th>Token</th><th>值</th><th>职责</th><th>来源注记</th></tr></thead>
+      <tbody>
+        <tr><td><code>--color-background</code></td><td>#FFFBEB</td><td>奶油纸面（页面底）</td><td>DB「Warm ink + amber on cream」原值</td></tr>
+        <tr><td><code>--color-primary</code></td><td>#292524</td><td>墨章：主按钮/激活 chips</td><td>对比度校准（原 #78716C 白字仅 4.0:1）</td></tr>
+        <tr><td><code>--color-accent</code></td><td>#D97706</td><td>琥珀注记：图标/装饰/大字号</td><td>DB 原值保留</td></tr>
+        <tr><td><code>--color-accent-text</code></td><td>#B45309</td><td>琥珀小字（AA 4.7:1）</td><td>校准新增</td></tr>
+        <tr><td><code>--color-destructive</code></td><td>#DC2626</td><td>破坏性操作唯一席位</td><td>裁决①：音乐红降级</td></tr>
+        <tr><td><code>--color-muted-foreground</code></td><td>#57534E</td><td>辅助文字</td><td>冷 slate → 暖 stone 校准</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 2. 数据色板 -->
+  <section class="section">
+    <div class="section-title"><h2>2 · 封面主色数据色板（D3）</h2><span class="mono">14 离散色 · 数据轴，禁用于 UI 语义 · P1-4 筛选 chips 引用</span></div>
+    <div class="swatch-row" id="data-swatches"></div>
+  </section>
+
+  <!-- 3. 字体 -->
+  <section class="section">
+    <div class="section-title"><h2>3 · 三层字体栈</h2><span class="mono">Display / UI / Meta</span></div>
+    <div class="state-demo">
+      <div class="spec-row"><span class="type-label mono">Display · 题名</span><span class="display-sm">个人音乐自传 <span style="font-style:italic;">— an autobiography in covers</span></span><span class="mono" style="margin-left:auto;">Playfair Display → Noto Serif SC</span></div>
+      <div class="spec-row"><span class="type-label mono">UI · 界面</span><span style="font-size:16px;font-weight:500;">青旅的天台，海边的夏天——界面文本、专辑名正文、按钮</span><span class="mono" style="margin-left:auto;">Inter → Noto Sans SC</span></div>
+      <div class="spec-row" style="border-bottom:none;"><span class="type-label mono">Meta · 目录卡</span><span class="mono" style="font-size:14px;">ON THIS DAY · 2025-11-11 · 37 MATCHES · TAG: 夜晚 (24)</span><span class="mono" style="margin-left:auto;">JetBrains Mono · 大写 + 0.08em</span></div>
+    </div>
+  </section>
+
+  <!-- 4. 间距/圆角/阴影 -->
+  <section class="section">
+    <div class="section-title"><h2>4 · 间距 / 圆角 / 阴影</h2><span class="mono">Density 6/10 Standard</span></div>
+    <div class="state-demo">
+      <div class="spec-row">
+        <span class="type-label mono">Spacing</span>
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <div style="width:4px;height:16px;background:var(--color-accent);"></div>
+          <div style="width:8px;height:24px;background:var(--color-accent);"></div>
+          <div style="width:16px;height:32px;background:var(--color-accent);"></div>
+          <div style="width:24px;height:40px;background:var(--color-accent);"></div>
+          <div style="width:32px;height:48px;background:var(--color-accent);"></div>
+          <div style="width:48px;height:56px;background:var(--color-accent);"></div>
+          <div style="width:64px;height:64px;background:var(--color-accent);"></div>
+        </div>
+        <span class="small">4 / 8 / 16 / 24 / 32 / 48 / 64 px</span>
+      </div>
+      <div class="spec-row">
+        <span class="type-label mono">Radius</span>
+        <div style="display:flex;gap:12px;">
+          <div style="width:56px;height:56px;background:var(--color-muted);border:var(--border-hairline);border-radius:6px;"></div>
+          <div style="width:56px;height:56px;background:var(--color-muted);border:var(--border-hairline);border-radius:10px;"></div>
+          <div style="width:56px;height:56px;background:var(--color-muted);border:var(--border-hairline);border-radius:14px;"></div>
+          <div style="width:56px;height:56px;background:var(--color-muted);border:var(--border-hairline);border-radius:4px;"></div>
+        </div>
+        <span class="small">sm 6 / md 10 / lg 14 / cover 4（方正实体唱片感）</span>
+      </div>
+      <div class="spec-row" style="border-bottom:none;">
+        <span class="type-label mono">Shadow</span>
+        <div style="display:flex;gap:16px;">
+          <div style="width:72px;height:48px;background:var(--color-card);border-radius:8px;box-shadow:var(--shadow-sm);"></div>
+          <div style="width:72px;height:48px;background:var(--color-card);border-radius:8px;box-shadow:var(--shadow-md);"></div>
+          <div style="width:72px;height:48px;background:var(--color-card);border-radius:8px;box-shadow:var(--shadow-lg);"></div>
+        </div>
+        <span class="small">sm 静置 / md hover / lg 弹层</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 组件 -->
+  <section class="section">
+    <div class="section-title"><h2>5 · 组件规格</h2><span class="mono">C-BTN / C-INPUT / C-CHIP / C-COVER</span></div>
+    <div class="state-demo">
+      <div class="spec-row">
+        <span class="type-label mono">Buttons</span>
+        <button class="btn btn-primary">添加到档案</button>
+        <button class="btn btn-secondary">又听了一次</button>
+        <button class="btn btn-danger">移除记录</button>
+        <button class="btn btn-text">移除全部条件</button>
+        <button class="btn btn-primary" disabled>不可用</button>
+      </div>
+      <div class="spec-row">
+        <span class="type-label mono">Input</span>
+        <input class="input" style="max-width:320px;" placeholder="搜索专辑、艺术家、Tag，或粘贴链接……" aria-label="搜索演示">
+        <span class="kbd">/</span><span class="small">全局聚焦（P1-8）</span>
+      </div>
+      <div class="spec-row">
+        <span class="type-label mono">Chips 值态</span>
+        <button class="chip" aria-pressed="false">Electronic <span class="count">(86)</span></button>
+        <button class="chip" aria-pressed="true">夜晚 <span class="count">(24)</span> ✕</button>
+        <span class="small">激活 = 墨底纸字；计数 mono；0 自动隐藏</span>
+      </div>
+      <div class="spec-row">
+        <span class="type-label mono">色板 chip</span>
+        <button class="chip" aria-pressed="false"><span class="chip-swatch" style="background:var(--swatch-blue);"></span>蓝 <span class="count">(18)</span></button>
+        <button class="chip" aria-pressed="false"><span class="chip-swatch" style="background:var(--swatch-red);"></span>红 <span class="count">(7)</span></button>
+        <span class="small">色点 + 文字标签（不单靠颜色）</span>
+      </div>
+      <div class="spec-row" style="border-bottom:none;">
+        <span class="type-label mono">Cover card</span>
+        <div style="display:flex;gap:16px;">
+          <div class="cover-card" style="width:120px;" tabindex="0" role="button" aria-label="专辑演示：Unknown Pleasures">
+            <div class="cover g-blue"><div class="cover-meta"><span class="cover-title">Unknown Pleasures</span><span class="cover-artist">JOY DIVISION · 1979</span></div><svg class="cover-fav" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></div>
+          </div>
+          <div class="cover-card" style="width:120px;" tabindex="0" role="button" aria-label="专辑演示：Sunbather">
+            <div class="cover g-amber"><div class="cover-meta"><span class="cover-title">Sunbather</span><span class="cover-artist">DEAFHEAVEN · 2013</span></div><span class="cover-dot" style="background:var(--swatch-amber);"></span></div>
+          </div>
+        </div>
+        <span class="small">1:1 固定比例 · hover meta 淡入 200ms · ♥/色点 = 个人数据</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 深色模式 -->
+  <section class="section">
+    <div class="section-title"><h2>6 · 深色模式预案</h2><span class="mono">P1 · 墨底琥珀注记反转</span></div>
+    <div class="dark-demo theme-dark-preview">
+      <div class="mono" style="color:var(--color-accent-text);">DARK PREVIEW · TOKEN 预案已定，v1 不实现</div>
+      <p class="display-sm" style="margin-top:var(--space-sm);">夜读模式下的同一座档案馆</p>
+      <div class="chip-list" style="margin-top: var(--space-md);">
+        <button class="chip" aria-pressed="true">夜晚 <span class="count">(24)</span></button>
+        <button class="chip" aria-pressed="false">Ambient <span class="count">(31)</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. checklist -->
+  <section class="section">
+    <div class="section-title"><h2>7 · 交付前 Checklist</h2><span class="mono">MASTER.md · 12 条</span></div>
+    <table class="token-table">
+      <tbody>
+        <tr><td>Lucide SVG 图标，禁 emoji 当图标</td><td>✓</td></tr>
+        <tr><td>一切可点元素 cursor-pointer + 44×44px 热区</td><td>✓</td></tr>
+        <tr><td>hover 过渡 150–300ms，无布局位移式 hover</td><td>✓</td></tr>
+        <tr><td>文字对比 ≥4.5:1（琥珀小字用 #B45309）</td><td>✓</td></tr>
+        <tr><td>焦点态可见（2px 琥珀环，永不裸删 outline）</td><td>✓</td></tr>
+        <tr><td>prefers-reduced-motion 全局尊重</td><td>✓</td></tr>
+        <tr><td>响应式 375 / 768 / 1024 / 1440，无横向滚动</td><td>✓</td></tr>
+        <tr><td>封面 1:1 固定比例（CLS &lt; 0.1）+ lazy + WebP/AVIF</td><td>✓</td></tr>
+        <tr><td>数据区三态全备（见 states.html）</td><td>✓</td></tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+  const SEMANTIC = [
+    ['background','#FFFBEB'],['card','#FFFFFF'],['foreground','#1C1917'],['primary','#292524'],
+    ['on-primary','#FAF6EE'],['secondary','#78716C'],['accent','#D97706'],['accent-text','#B45309'],
+    ['muted','#F7F3EA'],['muted-foreground','#57534E'],['border','#E9E2D2'],['destructive','#DC2626'],['ring','#D97706']
+  ];
+  const DATA = [
+    ['red','#DC2626','红'],['orange','#EA580C','橙'],['amber','#D97706','琥珀'],['yellow','#CA8A04','黄'],
+    ['lime','#65A30D','黄绿'],['green','#16A34A','绿'],['teal','#0D9488','青'],['blue','#2563EB','蓝'],
+    ['indigo','#4F46E5','靛'],['purple','#7C3AED','紫'],['magenta','#DB2777','品红'],['brown','#92400E','棕'],
+    ['gray','#78716C','灰'],['black','#1C1917','黑'],['white','#F5F5F4','白']
+  ];
+  document.getElementById('semantic-swatches').innerHTML = SEMANTIC.map(([n,h]) =>
+    `<div class="swatch"><div class="sw" style="background:${h};border-bottom:var(--border-hairline)"></div><div class="sw-name">${n}<br>${h}</div></div>`).join('');
+  document.getElementById('data-swatches').innerHTML = DATA.map(([k,h,n]) =>
+    `<div class="swatch"><div class="sw" style="background:${h};border-bottom:var(--border-hairline)"></div><div class="sw-name">--swatch-${k}<br>${n} ${h}</div></div>`).join('');
+</script>
+</body>
+</html>

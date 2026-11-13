@@ -8,6 +8,7 @@
 //   ③ 渲染三件套衔接（index.html ↔ progress-data.js ↔ app.js）
 //   ④ 事实源文档在档（核心规格/裁决/评审案/协议）
 //   ⑤ 登记完整性（IM 编号顺延、追认补记、00 索引同步）
+//   ⑥ 日报页三件套衔接（daily.html/daily.js/daily-reports.js，2026-11-14 用户裁决新开）
 // ============================================================
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -98,6 +99,41 @@ test('渲染三件套在档且互相衔接', () => {
   const appjs = readFileSync(join(KB, 'app.js'), 'utf8');
   assert.ok(appjs.includes('D.tracks'), 'app.js 渲染 tracks 主线视图');
   assert.ok(!/\.innerHTML\s*=/.test(appjs), 'app.js 保持零 innerHTML 赋值（注释提及不算，安全姿态 = textContent 注入）');
+});
+
+test('看板日报页三件套在档且互相衔接（2026-11-14 用户裁决新开）', () => {
+  for (const f of ['daily.html', 'daily.js', 'daily-reports.js']) {
+    assert.ok(existsSync(join(KB, f)), `08-进度看板/${f} 在档`);
+  }
+  const dailyHtml = readFileSync(join(KB, 'daily.html'), 'utf8');
+  assert.ok(dailyHtml.includes('src="daily-reports.js"'), 'daily.html 引入 daily-reports.js');
+  assert.ok(dailyHtml.includes('src="daily.js"'), 'daily.html 引入 daily.js');
+  assert.ok(dailyHtml.includes('index.html'), 'daily.html 含返回看板入口');
+  const dailyJs = readFileSync(join(KB, 'daily.js'), 'utf8');
+  assert.ok(!/\.innerHTML\s*=/.test(dailyJs), 'daily.js 保持零 innerHTML 赋值（安全姿态 = textContent 注入）');
+  const indexHtml = readFileSync(join(KB, 'index.html'), 'utf8');
+  assert.ok(indexHtml.includes('daily.html'), 'index.html 含日报页入口链接');
+  globalThis.window = {};
+  require(join(KB, 'daily-reports.js'));
+  const R = globalThis.window.MG_DAILY_REPORTS;
+  assert.ok(R && R.meta && Array.isArray(R.reports) && R.reports.length >= 1, 'MG_DAILY_REPORTS.reports 非空');
+  for (const r of R.reports) {
+    assert.ok(DATE_RE.test(r.date), `report.date 格式 YYYY-MM-DD (${r.date})`);
+    assert.ok(r.title && r.summary, `report.title/summary 非空 (${r.date})`);
+    assert.ok(Array.isArray(r.stats) && r.stats.length > 0, `report.stats 非空 (${r.date})`);
+    assert.ok(Array.isArray(r.sections) && r.sections.length > 0, `report.sections 非空 (${r.date})`);
+    for (const s of r.sections) {
+      assert.ok(s.heading, `section.heading 非空 (${r.date})`);
+      assert.ok(Array.isArray(s.items) && s.items.length > 0, `section.items 非空 (${r.date}/${s.heading})`);
+      for (const item of s.items) {
+        assert.ok(
+          (typeof item === 'string' && item.length > 0) || (item && typeof item === 'object' && item.text),
+          `section item 内容非空 (${r.date}/${s.heading})`,
+        );
+      }
+    }
+    assert.ok(Array.isArray(r.evidence) && r.evidence.length > 0, `report.evidence 非空 (${r.date})`);
+  }
 });
 
 test('事实源文档在档（核心规格/裁决/评审案/协议）', () => {

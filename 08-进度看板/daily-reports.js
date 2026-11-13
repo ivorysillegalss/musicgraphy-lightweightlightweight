@@ -1,0 +1,120 @@
+// ============================================================
+// Musicgraphy 2.0 · 看板「每日日报」页 · 数据文件
+// 2026-11-14 用户裁决新开（「在看板中新开一页记录每日的日报」，
+//   登记于《看板更新协议.md》§1/§2/§7）。本文件 = 日报唯一数据源；
+//   daily.html 勿改；daily.js 渲染（稳定件）。
+// 更新规则：每日收口时在 reports 数组【头部】追加当日条目（一天一条）；
+//   历史条目只增不改（纠错在当日条目内以「补记」标注，与 IM 记录纪律同款）。
+// 与进度看板的分工：progress-data.js 记卡片终态与可核查证据（长期事实），
+//   本文件记当天做了什么 / 裁决了什么 / 移交了什么（过程与全貌）。
+// 结构：meta + reports[]；report = { date, title, summary, stats[],
+//   sections[]（kind: 'list' | 'timeline'）, evidence[] }。
+// ============================================================
+window.MG_DAILY_REPORTS = {
+  meta: {
+    project: 'Musicgraphy 2.0',
+    purpose: '每日日报——当天做了什么、裁决了什么、移交了什么（与进度看板互为表里：看板记卡片终态，日报记过程与全貌）',
+    created: '2026-11-14',
+    lastEntry: '2026-11-14',
+    boardLink: 'index.html',
+    dataNote: '卡片级长期事实源 = progress-data.js（各卡 evidence 可核查 hash/路径/数字）；本页条目与其保持一致，冲突时以代码与卡片 evidence 为准',
+  },
+
+  reports: [
+    // ================= 2026-11-14 =================
+    {
+      date: '2026-11-14',
+      title: '通宵总攻：后端第三波 + P1 留存包 + Topster 发布备料，一夜全收口',
+      summary: '今晚是 2.0 上线前规模最大的一夜：后端第三波三卡（B1 联想 / B2 导出 / B3 仪表）追认令执行完毕，P1 留存包（W7-9-1）五批全落地，CRAWL 线最后一张实现卡（W4-6-1 颜色轴场景实测）收口，追加需求 B4 并发缓存 / B5 网易云导入 / B7 MB 权威化三卡完成，W10-12-1 Topster 与发布备料的 agent 可交付面全部就绪。主线仓 13 次提交（02:12–04:10）+ 文档包 7 次提交（03:22–04:11），测试 62→173 全绿，运行时依赖恒为 2，RSS 生产参数复测 86.68MB 销掉 V13 挂账。至此五条计数主线中四条全卡 done，SHIP 线 agent 可交付面 done——发布动作（landing 上线 / 渠道发布 / 决策门判定）按红线移交用户亲手执行。',
+
+      stats: [
+        { label: '主线仓提交', value: '13 次（02:12–04:10，4673b56→ba24eb4）' },
+        { label: '文档包提交', value: '7 次（03:22–04:11，a0a4012→1ff31a1）' },
+        { label: '测试', value: '62 → 173 全绿（+111，npm run check 四段）' },
+        { label: '运行时依赖', value: '2（恒定零新包 · G1）' },
+        { label: 'DAO 行数', value: '178 → 192 < 200（G3，委托 +13 已披露）' },
+        { label: 'RSS', value: '86.68MB < 100MB（生产参数复测 · G2/V13 销项）' },
+        { label: '看板卡', value: '10 张转 done + 护栏 G1–G4 evidence 全更' },
+        { label: '主线态势', value: 'DESIGN/CRAWL/BACKEND/FRONTEND 全卡 done；SHIP agent 面 done（发布归用户）；OPS watch' },
+      ],
+
+      sections: [
+        {
+          heading: '主要成果（按线）',
+          kind: 'list',
+          items: [
+            '【后端第三波 · 追认令三连全 done】B1 联想域：getAssociations（同期/同天/同 Tag 三查询，强度去重）+ GET /records/:id/associations + 详情页 P1-5「最近艺术家联想」渲染解锁（IM-16 闭环，组题确定性语义禁「猜你喜欢」）。B2 导出域：GET /api/v1/export?format=json|csv&with_covers=1——P1-3 永久免费红线落实，自写 store-only ZIP 93 行零新依赖（IM-21），5001 条实测 RSS 76MB / 84ms / JSON 1.4MB。B3 观察池仪表域：GET /api/v1/metrics/coverage——coverage 北极星实算（根线索 = note/listened_at/tag），行为类五项如实 null + 缺源说明，勿伪造数字。',
+            '【W7-9-1 · P1 留存包五批全 done】W7：P1-1 回响卡 + P1-2 记忆条渲染冒烟（周年边界恰好满 1 周年当天命中/单卡片/单入口 ≤1 步断言）。W8：P1-3 导出 UI 页脚三通道（JSON/CSV/含封面 zip）+ 六仪表页 GET /metrics（匿名化可关闭，cookie 季度级）+ scripts/rebuild.ts 导出可重建档案验证（北极星 coverage 源库↔重建库一致）。W9：P1-6 Tag 轻治理（评审案先行，短词阈值分档防 2 字中文误报）+ P1-8 键盘流补测 + P1-10 评审案。P1-10：命名视图 saved_views 落地（0002 迁移 UNIQUE(user_id,name) + 303 展开筛选 URL 不破坏 URL 即状态 + named_view_rate 实算闭环 B3 缺口项）。',
+            '【W4-6-1 · 颜色轴真库场景实测 done，零 src/ 改动】62 次真实上游搜索（限流步进 3.2–3.5s，0 次 429）攒 41 张真实专辑入库，data/covers/ 41 文件 sha256 内容寻址 0 失败；color-extract 全量两轮回填 41/41 成功率 100%；「蓝色封面的那张电子」蓝轴稀疏定谳（6 封面原图目检对照：提取忠实，真蓝多去饱和 navy→黑/灰，色板 8=#2563EB 天然长尾 → W6 P1-4 色板设计输入）；验收组合 Electronic+黑(color=14)=26 张 ∈[20,40] 一屏收敛 ✓。CRAWL 线实现卡全清。',
+            '【B4 · 多用户并发与封面缓存 done（IM-22 执行）】metadata/cover-gate.ts CoverGate：封面 single-flight（同 URL 合并）+ 独立「发起间隔 ≥1s + 在途 ≤2」门，不占搜索 30/min 窗；搜索 single-flight（同 q 并发共享一次上游调用，失败不连坐）；快照回放缓存（TTL 10min / FIFO 256，命中零上游、in_collection 即时重算）；回填空闲门（空闲 >10s 才注入下一张，交互永远优先）。测试 +10 全零网络注入。',
+            '【B5 · 网易云专辑导入器 done（IM-23 执行）】迁移 0003_source_netease：SQLite 禁 ALTER CHECK → 官方四步重建，FK 窗口移出事务 + foreign_key_check 兜底（IM-25，存量库实测数据保真）；netease.ts 瘦客户端 335 行（三认证 / 收藏+歌单两导入源 / cookie 即用即弃 redact 脱敏）；scripts/netease-import.ts CLI 端到端实测：dry-run 零写入 → 导入 fetched=3 new=3 imported=3 → 重放幂等 exists=3；部署口径 = 需自部署 api-enhanced 容器（NETEASE_API_BASE_URL 未配置即停用 exit 2）。',
+            '【B7 · MB 按需权威化 done（IM-26）】scripts/mb-calibrate.ts：source=netease 行逐张 resolve MusicBrainz 归并回原行（行现值防中文名分裂新行 / 用户数据不动 / 封面不降级 / 幂等续跑 / 未命中 fail-soft 保留）；IM-23 Q1 路线 B「MB 权威化后置为按需同步、不丢能力」兑现。',
+            '【W10-12-1 · agent 可交付面 done】Topster v1（0004_topster_views 策展模型：Topster = Collection 一种 View，item_order 只存引用禁第二套数据；容量 60 对齐内存纪律）+ SVG 高清导出（零依赖纯文本 buildTopsterSvg，禁 base64，escapeXml 零 raw 插入，署名内嵌）+ 海报页（截图即成图，补位主流平台不收 SVG 的诚实边界）+ 页脚赞助插座一行字（无弹窗无金额公示，href 待用户配置）。文档包 5 新件：08 发布文案定稿（五渠道 + 实测锚点表禁夸大）/ 09 理念素材稿 3 篇 / 10 上线清单 / 11 首评口径 / 12 技术债复盘（check 163/163）。',
+            '【看板与文档基建 · 用户三则裁决落地】看板主线 tracks 视图改版（六主线 × 35 卡串行列举，原 W 卡一字未删仅重编组，协议特例登记）；文档包 git 仓新建（main 基线 a0a4012）+ 两则新原则成文——「卡片/文档改毕必 git 提交」（505f1a5）与「单元测试强制 + zip 重建降级为仅用户显式要求」（cdbdcac，tests/ 9 项可用性断言）；用户级记忆 ~/.zcode/AGENTS.md 全量同步；Python 3.12 + scrapling 0.4.9 skill 运行时环境装妥（钉 0.4.9，勿装 0.5.x）。',
+            '【决策登记】IM-21（导出域）/ IM-22（并发缓存评审案 + 执行补记）/ IM-23（网易云评审案登记 + P1-6 实现决策）/ IM-24（saved_views 迁移决策）/ IM-25（迁移 FK 窗口 + 0003 重建实测，含计数考古补正）/ IM-26（MB 归并策略四项）。',
+          ],
+        },
+        {
+          heading: '时间线（按提交时点）',
+          kind: 'timeline',
+          items: [
+            { time: '02:12', text: 'B1 联想域收口（c83ef73，捎带 B2 耦合闭包获追认；check 76/76）' },
+            { time: '02:24', text: 'B3 观察池仪表域（4673b56；80/80）' },
+            { time: '02:38', text: 'W7-9-1 W7 批：P1-1/2 渲染冒烟 +8（0f3860e；88/88）' },
+            { time: '02:42', text: 'W7-9-1 W8 批：导出 UI + 六仪表页 + rebuild 验证 +12（f6c5d21；100/100）' },
+            { time: '02:55', text: 'W7-9-1 W9 批：Tag 轻治理 + 键盘流 + saved_views 评审案 +10（4cd1108；110/110）' },
+            { time: '02:56', text: 'W9 配套：retention-w7 补 tagHint 字段（841fcb5，零行为变更）' },
+            { time: '03:01', text: 'W4-6-1 颜色轴真库场景实测收口（685749d，零 src/ 改动；110/110）' },
+            { time: '03:06', text: 'W7-9-1 P1-10 命名视图落地 + G3 停止线预案外拆 echo/lookups（c8cc1d6；118/118）' },
+            { time: '03:22', text: '文档包 git 仓基线 a0a4012（全量入库）' },
+            { time: '03:23', text: '原则成文一：卡片/文档改毕必 git 提交（505f1a5）' },
+            { time: '03:30', text: 'B4 并发与封面缓存 R1–R4（016c100；128/128）' },
+            { time: '03:32', text: '原则成文二：单元测试强制 + zip 重建降级（cdbdcac）' },
+            { time: '03:43', text: 'B5 网易云导入器（7aa21af；146/146）' },
+            { time: '03:46', text: '看板线上重部署（stage 重建 + Site CLI deploy）' },
+            { time: '03:49', text: 'G2 RSS 生产参数复测登记（0d828e3；86.68MB，V13 销项）' },
+            { time: '03:59', text: 'W10-12-1 W10 批：Topster v1 + 0004 迁移 + 0004 联动 netease.smoke 最小修复披露（fac6f33；159/159）' },
+            { time: '04:04', text: 'W10-12-1 W11 批：SVG 导出 + 海报页 + 赞助插座（82a158f；163/163）＋文档包 5 新件入库（7f95537）' },
+            { time: '04:10', text: 'B7 MB 按需权威化（ba24eb4；173/173）＋ IM-26 定稿（427e32a）＋ 看板 B7 置 done（1ff31a1）' },
+            { time: '04:11+', text: '看板新增「每日日报」页（用户裁决；首篇 = 本日报）＋ 主线汇总状态按实况修正（CRAWL/BACKEND → done）' },
+          ],
+        },
+        {
+          heading: '今晚用户裁决与追认',
+          kind: 'list',
+          items: [
+            '第三波 B1/B2/B3 提前执行追认令（07 设计包 02 拆分方案 §8 三 prompt 全批准）。',
+            'IM-14 落地：CSS 构建产物预算线上调至 ≤20KB（实测 19.02KB 达标，不列技术债、不砍线；设计 PRD §9 预算表落字，D2 卡转 done）。',
+            'IM-17 追认：jpeg-js 进 devDeps（运行时依赖仍 = 2，G1 注记）。',
+            'B4 评审案 Q1–Q7 全按建议值；B5 派工令 = 追认令（Q1–Q6 全按建议值）；B7 同令（Q1 路线 B 后置半截）。',
+            'P1-10 saved_views 新表批准；W10 Topster 评审案 Q1–Q8 + R1–R4 与 W11 导出格式 A+C 组合，同批 AskUserQuestion 批准。',
+            '看板展现改版裁决：phases 周视图 → tracks 主线视图（协议特例登记；app.js 经授权改，index.html 展示壳未动——本日随后开日报页时入口链接一处经同一裁决授权）。',
+            '文档包治理三则：git 仓新建（main，提交身份 agent@musicgraphy.local）、卡片/文档改毕必提交、单元测试强制（node --test tests/，红 = 不得提交）+ zip 重建降级为仅用户显式要求。',
+          ],
+        },
+        {
+          heading: '移交用户与待办',
+          kind: 'list',
+          items: [
+            '【发布动作 · 红线 = 用户亲手，物料已备齐（02-变现文档包/10）】landing 上线（30 分钟自检单 6 项）；赞助链接两处 href=# 替换为真实收款链接；全渠道发布（PH / V2EX / 即刻 / 小红书 / RYM，文案 = 02 包/08 终稿）。',
+            '【W12 决策门 · 判定权在用户】T1–T4 首评收集（口径 = 02-变现文档包/11：自托管无遥测 = 自愿上报，行为类待埋点勿伪造）+ 连续 4 周 coverage /metrics 本地读数；判定分支三路径预案已在档。',
+            '【提交时机待裁决】主线仓未提交在制品四件（AGENTS.md / docs/find-scenario.md / docs/find-scenario-screenshots/ / tests/perf-like.test.ts，归属 W4-6-2）；遗留仓 W2-2 元数据域落点。',
+            '【归属澄清待追认】7f95537 捎带披露：B5 会话文档件（IM-25 段 + 网易云评审案）与并行卡变更随 Topster 收口入库，其提交说明误标「B5 会话件」实为 B7 回写——7f95537 + 427e32a 两提交合读 = 完整回写。',
+            '【编号复核】IM-23 出现两则同号（§12 网易云评审案登记 与 §12 P1-6 Tag 治理实现决策）——IM 只增不改纪律下不重编号，留待全量同步会话出补正案交用户裁决。',
+            '【观察池既有项不变】colorOf(16)/13「灰」双 chip 消歧（涉种子库生命周期）；installAuth 页面守卫仅拦根路径（技术债复盘 D1，/metrics /album/:id /topsters 匿名可达）；双仓归属/合并与 alias_sources 编码归一。',
+          ],
+        },
+      ],
+
+      evidence: [
+        { label: '门禁', value: 'npm run check 全绿 173/173（tsc/eslint/vite build/node:test；HEAD ba24eb4 + B7 三文件复验钉住）' },
+        { label: '运行时依赖', value: '2（hono + @hono/node-server；12 周恒定零新包，G1）' },
+        { label: 'DAO', value: '192 行 < 200（G3；域文件外拆十余个 + 一行式委托先例）' },
+        { label: 'RSS', value: '86.68MB（生产参数 --max-old-space-size=64 复测，三方一致；V13 销项，G2）' },
+        { label: '提交', value: '主线仓 4673b56→ba24eb4 共 13 + 文档包 a0a4012→1ff31a1 共 7；hash 逐笔见时间线；主线工作树余 W4-6-2 在制品四件（提交时机待裁决）' },
+        { label: '看板', value: '六主线 35 卡全部同步（今晚 10 卡转 done）；本日报页上线即线上镜像重部署' },
+        { label: '事实源', value: '卡片级证据 = progress-data.js 各卡 evidence（hash/路径/数字可核查）；决策 = 05/实现决策记录.md IM-21～26' },
+      ],
+    },
+  ],
+};

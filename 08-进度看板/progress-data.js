@@ -48,7 +48,7 @@ window.MG_PROGRESS = {
 
     // ---------- T2 数据爬取 ----------
     {
-      id: 'CRAWL', short: '数据爬取', status: 'in_progress', counted: true,
+      id: 'CRAWL', short: '数据爬取', status: 'done', counted: true,
       title: '② 数据爬取主线 · 外部数据获取与加工',
       subtitle: '元数据搜索 → 封面落盘 → 跨源降级 → 主色提取 → 存量回填（W0–W5 段实现早于排期日历）',
       cards: [
@@ -89,9 +89,9 @@ window.MG_PROGRESS = {
 
     // ---------- T3 后端 ----------
     {
-      id: 'BACKEND', short: '后端', status: 'in_progress', counted: true,
+      id: 'BACKEND', short: '后端', status: 'done', counted: true,
       title: '③ 后端主线 · 存储 / 鉴权 / 路由 / 可靠性基座',
-      subtitle: '环境→规范→spike→建表→鉴权→切片→备份→存储层→第三波待追认三域（W0–W1 实现早于排期日历）',
+      subtitle: '环境→规范→spike→建表→鉴权→切片→备份→存储层→第三波三域已追认收口（W0–W1 实现早于排期日历）',
       cards: [
         { id: 'W0-1', title: 'D1 环境：Node 26 LTS + 仓库骨架', status: 'done',
           deps: [],
@@ -280,6 +280,7 @@ window.MG_PROGRESS = {
   ],
 
   notes: [
+    { level: 'info', text: '2026-11-14 看板新增「每日日报」页（用户裁决「在看板中新开一页记录每日的日报」）：新增 daily.html / daily.js / daily-reports.js 三件 + index.html 顶部入口链接一处（协议 §1/§2/§7 已登记）；每日收口时在 daily-reports.js 头部追加当日条目，历史条目只增不改。首篇 = 2026-11-14 通宵总攻日报（B1/B2/B3/B4/B5/B7、W7-9-1、W10-12-1、W4-6-1、D2 十卡收口，check 173/173）。另按协议「以代码为事实源」修正主线汇总状态：CRAWL/BACKEND in_progress→done（其下实现卡全 done，2026-11-14 复核）；SHIP 保持 in_progress（发布动作归用户执行中）。' },
     { level: 'info', text: '2026-11-14 看板展现改版（用户裁决）：视图由「PM 周阶段」重组为六条主线——设计 / 数据爬取 / 后端 / 前端 / 集成发布 / 运维护栏；全部卡片在各主线内按串行依赖序列举（#序号 + 前置依赖），线间供给/验收/收口/约束关系见「主线间关系」区。原周卡编号（W0-1…W10-12-1）与全部证据记录原样保留，仅重新编组；新增卡均带「卡源」标注；app.js 渲染器经同一裁决改为主线视图（协议已登记），index.html 未动。' },
     { level: 'info', text: '工作区硬约束（2026-11-13）：主线仓 = ../musicgraphy/（唯一开发位）；Musicgraphy-2.0-代码库 = 只读存档（禁写禁删，归属调整须用户裁决）；文档包 = 唯一事实源（回写+索引+zip）；完成即同步看板。全文见 ../00-工作区关系与硬约束.md——agent 开工前必读。看板线上镜像：musicgraphy-progress-ohqn.zai-ai.site' },
     { level: 'info', text: '2026-11-12 新增 W1-9（集成收口）：应用户"未阻塞即继续"令，遗留仓 records/collection/echo 三域路由填充（stub 交接自述的域文件）+ index.ts 备份 TODO 接线，53/53 + e2e 实机全绿。search.ts（metadata 域依赖，并行会话进行中）与 metrics.ts（契约外）保持 stub 待各自路径。' },

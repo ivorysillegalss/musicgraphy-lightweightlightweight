@@ -81,3 +81,10 @@ export const SQL_COVERAGE =
   'SELECT (SELECT COUNT(*) FROM collection_record WHERE user_id = ?) AS total, ' +
   "(SELECT COUNT(*) FROM collection_record r WHERE r.user_id = ? AND ((r.note IS NOT NULL AND r.note <> '') OR r.listened_at IS NOT NULL " +
   'OR EXISTS (SELECT 1 FROM record_tag rt WHERE rt.record_id = r.id))) AS covered';
+
+// Tag 轻治理候选（P1-6，评审案 docs/tag-governance-review.md §2）：全部 tag + 引用计数
+// （LEFT JOIN 含 0 引用——setTags 删引用不删 tags 行）；idx_record_tag_tag 点查驱动；refs DESC = 合并推荐方向的数据基础
+export const SQL_TAG_GOV =
+  'SELECT t.id, t.name, t.normalized_name, COUNT(rt.record_id) AS refs ' +
+  'FROM tags t LEFT JOIN record_tag rt ON rt.tag_id = t.id ' +
+  'WHERE t.user_id = ? GROUP BY t.id ORDER BY refs DESC, t.normalized_name LIMIT 500';

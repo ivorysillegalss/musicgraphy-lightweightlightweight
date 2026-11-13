@@ -68,6 +68,23 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     }
   };
 
+  // P1-6 Tag 治理候选是馈赠：失败静默降级为不渲染（评审案 docs/tag-governance-review.md §4）
+  const safeTagGov = (): ReturnType<DAO['tagCandidates']> | null => {
+    try {
+      return dao.tagCandidates();
+    } catch {
+      return null;
+    }
+  };
+
+  // P1-6 季度级不打扰：当季已 dismiss/已处理（cookie）→ 提示不渲染（PRD 验收 ≤1 次/季度；无表零迁移）
+  const TAG_HINT_COOKIE = 'mg_tag_hint';
+  const QUARTER_MAX_AGE = 92 * 24 * 3600; // 季度级（与 P1-6 治理提示 / metrics 关闭开关同节律）
+  const quarterStamp = (): string => {
+    const now = new Date();
+    return `${now.getFullYear()}-Q${Math.floor(now.getMonth() / 3) + 1}`;
+  };
+
   const safeTopTags = (): string[] => {
     try {
       return (dao.countAxes('local', {}, ['tag']).tag ?? []).filter((x) => x.value !== null && x.count > 0).slice(0, 8).map((x) => String(x.value));
@@ -120,7 +137,8 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     const p = searchParams(c);
     const filter = parseFilter(p);
     const filters = toDaoFilters(filter);
-    const flash = p.get('flash') === 'added' ? 'added' : null;
+    const rawFlash = p.get('flash');
+    const flash = rawFlash === 'added' || rawFlash === 'merged' || rawFlash === 'duplicate' || rawFlash === 'error' ? rawFlash : null;
     const q = filter.q ?? '';
 
     let items: ReturnType<DAO['listPage']>['items'] = [];
@@ -138,10 +156,12 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
       error = '筛选查询失败——档案服务没有回应。'; // 舱壳保留（结构可评审），数据区进 error 三态
     }
 
+    // P1-6：当季已处理（cookie 值 = 当季戳）→ 提示不渲染（≤1 次/季度）
+    const tagHint = getCookie(c, TAG_HINT_COOKIE) === quarterStamp() ? null : safeTagGov();
     const { candidates, notice } = await safeCandidates(q);
     return c.html(
       renderCollection(
-        { flash, dupHref: null, echo: safeEcho(), filter, counts, items, meta, total, candidates, notice, topTags: safeTopTags(), error },
+        { flash, dupHref: null, echo: safeEcho(), tagHint, filter, counts, items, meta, total, candidates, notice, topTags: safeTopTags(), error },
         { title: q === '' ? 'Musicgraphy · Collection' : `Musicgraphy · 「${q}」的检索` }
       )
     );
@@ -316,11 +336,37 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     return c.redirect(`/album/${id}`, 303);
   });
 
+  // ---------------------------------------------------------------- Tag 轻治理动作（P1-6，评审案 docs/tag-governance-review.md §1 Q4/Q6；无 JS 表单 + 303）
+
+  app.post('/tags/merge', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const source = typeof b['source'] === 'string' ? b['source'] : '';
+    const target = typeof b['target'] === 'string' ? b['target'] : '';
+    try {
+      const { deleted } = dao.mergeTags(source, target);
+      if (deleted) {
+        // 本季度已处理 → 提示不再打扰（合并成功也算处理完成，Q4）
+        setCookie(c, TAG_HINT_COOKIE, quarterStamp(), { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: QUARTER_MAX_AGE });
+        return c.redirect('/?flash=merged', 303); // 旧 tag 消失、引用保留（moved=0 且全去重也算合并完成——评审案 §1 Q5 补记）
+      }
+      // 未发生合并（同名/缺目标等无操作）→ 静默回主页
+    } catch {
+      /* 失败静默回主页（提示条仍在，可重试；记录本体不受影响） */
+    }
+    return c.redirect('/', 303);
+  });
+
+  app.post('/tags/hint-dismiss', (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    setCookie(c, TAG_HINT_COOKIE, quarterStamp(), { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: QUARTER_MAX_AGE }); // 季度翻滚自然重开
+    return c.redirect('/', 303);
+  });
+
   // ---------------------------------------------------------------- 观察池仪表页（W8：PRD §6 · 04B §3 自托管匿名计数、可关闭）
 
   // 「可关闭」= 呈现级开关（cookie，无表无 JS）：关闭仅隐藏数字呈现，数据本身全部本地派生无外发
   const METRICS_COOKIE = 'mg_metrics';
-  const QUARTER_MAX_AGE = 92 * 24 * 3600; // 季度级（与 P1-6 治理提示同节律）
 
   app.get('/metrics', (c) => {
     const closed = getCookie(c, METRICS_COOKIE) === 'closed';

@@ -22,6 +22,7 @@ import {
 } from './types';
 import * as assoc from './associations';
 import * as metrics from './metrics';
+import * as taggov from './taggov';
 import * as writes from './writes';
 
 export { DuplicateRecordError, NotFoundError, CursorInvalidError } from './errors';
@@ -182,6 +183,11 @@ export class DAO {
 
   // P1-5 联想（实现见 associations.ts；案 B 域文件委托——2026-11-14 用户裁决路径 B，DAO <200 行护栏 G3）
   getAssociations = (recordId: string, limit = 18, userId = 'local'): assoc.AssociationItem[] => assoc.getAssociations(this.st, recordId, limit, userId);
+
+  // P1-6 Tag 轻治理（实现见 taggov.ts；评审案 docs/tag-governance-review.md——域文件委托先例）
+  tagCandidates = (userId = 'local'): taggov.TagGovernance => taggov.candidates(this.st, userId);
+  mergeTags = (sourceName: string, targetName: string, userId = 'local'): { moved: number; deleted: boolean } =>
+    taggov.mergeTags(this.db, this.st, sourceName, targetName, userId);
 
   // —— 写路径（实现见 writes.ts；委托保持调用方接口不变，PM §7.1 护栏）——
   upsertAlbum = (input: Parameters<typeof writes.upsertAlbum>[2]): { id: string; existed: boolean } => writes.upsertAlbum(this.db, this.st, input);

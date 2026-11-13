@@ -233,7 +233,7 @@ export function resultStatus(count: number, note = 'RECOGNITION VIEW'): HtmlEsca
 
 // ---------------------------------------------------------------- flash / C-DUP（no-JS 基线的结果反馈）
 
-export type FlashKind = 'added' | 'duplicate' | 'error' | null;
+export type FlashKind = 'added' | 'duplicate' | 'error' | 'merged' | null;
 
 export function flashBanner(kind: FlashKind, duplicateHref?: string, relistenAction?: string): HtmlEscapedString {
   if (kind === 'added') {
@@ -251,6 +251,9 @@ export function flashBanner(kind: FlashKind, duplicateHref?: string, relistenAct
   }
   if (kind === 'error') {
     return html`<div class="flash flash-error" role="alert">添加失败——数据未受影响，可重试。</div>`;
+  }
+  if (kind === 'merged') {
+    return html`<div class="flash flash-ok" role="status">TAGS MERGED · Tag 已合并——旧 Tag 消失，引用全部保留（P1-6）。</div>`;
   }
   return html``;
 }

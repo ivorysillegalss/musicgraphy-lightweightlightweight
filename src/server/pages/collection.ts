@@ -8,6 +8,7 @@
 import { html } from 'hono/html';
 import type { Filters } from '../db/sql';
 import type { CollectionItem, FacetCount } from '../db/types';
+import type { TagGovernance } from '../db/taggov';
 import type { AlbumSearchItem } from '../metadata/search';
 import { colorOf, coverCard, coverSrcOf, coverWallCards, echoCard, emptyWall, errorStrip, flashBanner, icon, resultStatus, siteHeader, type FlashKind, type LayoutOptions, layout } from '../html';
 import { buildAddDialog } from './adddialog';
@@ -212,12 +213,48 @@ export function candidateSection(candidates: AlbumSearchItem[], notice: string |
 </section>`;
 }
 
+// ---------------------------------------------------------------- Tag 轻治理提示条（P1-6 一行式：近形对 ≤3 可合并 + 孤 tag ≤5 提示；季度级不打扰由 routes cookie 语义承担）
+
+export function tagGovHint(g: TagGovernance): Esc {
+  const hasPairs = g.pairs.length > 0;
+  const hasOrphans = g.orphans.length > 0;
+  if (!hasPairs && !hasOrphans) return html``;
+  const pairRow = hasPairs
+    ? html`<span class="small">近形 Tag：<span style="color:var(--color-muted-foreground);">点击选目标合并，引用全部重定向保留。</span></span>
+    ${g.pairs.map(
+      (p) => html`<span class="chip active" style="gap:6px;">${p.source.name} / ${p.target.name}
+      <form method="post" action="/tags/merge" style="display:inline;">
+        <input type="hidden" name="source" value="${p.source.name}"><input type="hidden" name="target" value="${p.target.name}">
+        <button class="btn-text" type="submit" style="padding:4px 8px; min-height:0; font-size:12px;" title="把 ${p.source.name} 并入 ${p.target.name}（推荐：引用较多者为目标）">并入 ${p.target.name}</button>
+      </form>
+      <form method="post" action="/tags/merge" style="display:inline;">
+        <input type="hidden" name="source" value="${p.target.name}"><input type="hidden" name="target" value="${p.source.name}">
+        <button class="btn-text" type="submit" style="padding:4px 8px; min-height:0; font-size:12px;">并入 ${p.source.name}</button>
+      </form>
+    </span>`
+    )}`
+    : '';
+  const orphanRow = hasOrphans
+    ? html`<span class="small" style="color:var(--color-muted-foreground);">孤 Tag（只挂 1 张）：${g.orphans.map((t) => html`<span class="chip" style="cursor:default;">${t.name}</span>`)}——挂到更多记录，或与近形 Tag 合并。</span>`
+    : '';
+  return html`<div class="tag-gov-hint" role="note" aria-label="Tag 轻治理提示（季度级）" style="display:flex; flex-wrap:wrap; gap:var(--space-sm); align-items:center; border:1px dashed var(--color-border); border-radius:var(--radius-md); padding:var(--space-sm) var(--space-md); margin-bottom:var(--space-lg);">
+    <span class="mono small" style="color:var(--color-accent-text);">TAG GOVERNANCE · 季度治理</span>
+    ${pairRow}
+    ${orphanRow}
+    <form method="post" action="/tags/hint-dismiss" style="margin-left:auto;">
+      <button class="btn-text" type="submit" style="padding:4px 6px; min-height:0; font-size:12px;">本季度不再提示</button>
+    </form>
+  </div>`;
+}
+
 // ---------------------------------------------------------------- 页面组装
 
 export interface CollectionPageInput {
   flash: FlashKind;
   dupHref: string | null;
   echo: CollectionItem | null;
+  /** P1-6 Tag 轻治理候选（null = 无候选 / 馈赠失败 / 当季已关闭——routes cookie 语义）；空对象 = 不渲染 */
+  tagHint: TagGovernance | null;
   filter: FilterState;
   counts: AxisCounts | null;
   items: CollectionItem[];
@@ -235,6 +272,7 @@ export function renderCollection(d: CollectionPageInput, layoutOpts: Omit<Layout
 <main>
   ${flashBanner(d.flash, d.dupHref ?? undefined, d.flash === 'duplicate' && d.dupHref !== null ? `${d.dupHref}/relisten` : undefined)}
   ${d.echo === null ? '' : echoCard(d.echo)}
+  ${d.tagHint === null ? '' : tagGovHint(d.tagHint)}
   <div data-island="filter-cabin">
     ${cabinSection(d.filter, d.counts)}
     <div class="results" data-island="wall-scroll">

@@ -48,15 +48,18 @@ describe('观察池仪表（PRD §6，02 §4 metrics 行）', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test('空档案：coverage = null（0/0 无定义）+ 行为类五项 null + notes 缺失说明 + {data} 包裹', async () => {
+  test('空档案：coverage = null（0/0 无定义）+ 行为类四项 null + notes 缺失说明 + {data} 包裹', async () => {
     const res = await app.request('/api/v1/metrics/coverage', G);
     assert.equal(res.status, 200);
     const d = (JSON.parse(await res.text()) as CoverageBody).data;
     assert.equal(d.coverage, null);
-    for (const k of ['search_fail_rate', 'named_view_rate', 'echo_ctr', 'note_revisit_rate', 'export_usage'] as const) {
+    for (const k of ['search_fail_rate', 'echo_ctr', 'note_revisit_rate', 'export_usage'] as const) {
       assert.equal(d[k], null, `${k} 待埋点必须 null（勿伪造数字）`);
       assert.match(d.notes[k] ?? '', /W8-9/, `${k} 须附数据源缺失说明`);
     }
+    // named_view_rate：P1-10 saved_views 落地后实算（2026-11-14 用户批准）——空档案无视图仍 null，但 notes 缺口说明已移除
+    assert.equal(d.named_view_rate, null);
+    assert.ok(!('named_view_rate' in d.notes));
     assert.ok(!Number.isNaN(Date.parse(d.generated_at)));
   });
 
@@ -100,6 +103,7 @@ describe('观察池仪表（PRD §6，02 §4 metrics 行）', () => {
     const d = (JSON.parse(await res.text()) as CoverageBody).data;
     assert.equal(d.coverage, dao.metricsCoverage().coverage);
     assert.equal(d.coverage, 0.5);
-    assert.equal(d.notes['named_view_rate']?.includes('W8-9'), true);
+    assert.equal(d.named_view_rate, dao.metricsCoverage().named_view_rate); // P1-10 落地后实算，端点与 DAO 同值
+    assert.equal(d.notes['named_view_rate'], undefined); // 缺口说明随实算移除
   });
 });

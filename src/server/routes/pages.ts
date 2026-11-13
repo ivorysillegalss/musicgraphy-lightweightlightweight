@@ -35,7 +35,7 @@ import { searchAlbums, type AlbumSearchItem } from '../metadata/search';
 import type { SourceChain } from '../metadata/sources';
 import { sameOrigin } from '../auth';
 import type { RecordsRouteOptions } from './records';
-import { buildHref, cabinSection, parseFilter, renderCollection, resultsSection, toDaoFilters, type AxisCounts, type FilterState } from '../pages/collection';
+import { buildHref, cabinSection, parseFilter, queryJsonToFilter, renderCollection, resultsSection, toDaoFilters, type AxisCounts, type FilterState } from '../pages/collection';
 import { renderAlbumDetail, renderAlbumError, renderAlbumNotFound } from '../pages/album';
 import { renderAddPage } from '../pages/add';
 import { renderMetrics } from '../pages/metrics';
@@ -72,6 +72,15 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
   const safeTagGov = (): ReturnType<DAO['tagCandidates']> | null => {
     try {
       return dao.tagCandidates();
+    } catch {
+      return null;
+    }
+  };
+
+  // P1-10 命名视图是馈赠：失败静默降级为不渲染（评审案 docs/saved-views-review.md；用户 2026-11-14 批准实现）
+  const safeSavedViews = (): ReturnType<DAO['listSavedViews']> | null => {
+    try {
+      return dao.listSavedViews();
     } catch {
       return null;
     }
@@ -135,6 +144,20 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
 
   app.get('/', async (c) => {
     const p = searchParams(c);
+    // P1-10 恢复（评审案 Q6）：/?view=<name> → 读 query_json → 303 展开成筛选参数 URL（URL 即状态不被破坏，可分享可回退）；
+    // 视图不存在 / query_json 损坏 → 静默回正常渲染（馈赠语义，不阻塞找回主路径）
+    const viewName = p.get('view');
+    if (viewName !== null && viewName !== '') {
+      try {
+        const v = dao.getViewByName(viewName);
+        if (v !== undefined) {
+          const f = queryJsonToFilter(v.query_json);
+          if (f !== null) return c.redirect(buildHref(f), 303);
+        }
+      } catch {
+        /* 静默 */
+      }
+    }
     const filter = parseFilter(p);
     const filters = toDaoFilters(filter);
     const rawFlash = p.get('flash');
@@ -158,10 +181,11 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
 
     // P1-6：当季已处理（cookie 值 = 当季戳）→ 提示不渲染（≤1 次/季度）
     const tagHint = getCookie(c, TAG_HINT_COOKIE) === quarterStamp() ? null : safeTagGov();
+    const savedViews = safeSavedViews();
     const { candidates, notice } = await safeCandidates(q);
     return c.html(
       renderCollection(
-        { flash, dupHref: null, echo: safeEcho(), tagHint, filter, counts, items, meta, total, candidates, notice, topTags: safeTopTags(), error },
+        { flash, dupHref: null, echo: safeEcho(), tagHint, savedViews, filter, counts, items, meta, total, candidates, notice, topTags: safeTopTags(), error },
         { title: q === '' ? 'Musicgraphy · Collection' : `Musicgraphy · 「${q}」的检索` }
       )
     );
@@ -360,6 +384,37 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
   app.post('/tags/hint-dismiss', (c) => {
     if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
     setCookie(c, TAG_HINT_COOKIE, quarterStamp(), { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: QUARTER_MAX_AGE }); // 季度翻滚自然重开
+    return c.redirect('/', 303);
+  });
+
+  // ---------------------------------------------------------------- 命名视图动作（P1-10，评审案 Q6/Q7；无 JS 表单 + 303；只存查询状态）
+
+  app.post('/views', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const name = typeof b['name'] === 'string' ? b['name'].trim() : '';
+    const queryJson = typeof b['query_json'] === 'string' ? b['query_json'] : '';
+    if (name !== '' && queryJson !== '' && queryJsonToFilter(queryJson) !== null) {
+      try {
+        dao.createSavedView(name, queryJson); // 重名（UNIQUE user_id+name）→ 静默回主页（视图列表原样可见）
+      } catch {
+        /* 重名/失败静默 */
+      }
+    }
+    return c.redirect('/', 303);
+  });
+
+  app.post('/views/delete', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const viewId = typeof b['view_id'] === 'string' ? b['view_id'] : '';
+    if (viewId !== '') {
+      try {
+        dao.deleteSavedView(viewId);
+      } catch {
+        /* 不存在/失败静默（删除请求幂等） */
+      }
+    }
     return c.redirect('/', 303);
   });
 

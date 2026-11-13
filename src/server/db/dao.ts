@@ -1,7 +1,10 @@
 import type { Db } from './connection';
 import { buildWhere, decodeCursor, encodeCursor, escapeLike, normalizeTag, nowIso, SORTS, StmtCache, type Cell, type Filters, type Row } from './sql';
-import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_ECHO, SQL_EXPORT, SQL_EXPORT_TAGS, SQL_RECORD_TAGS } from './queries';
+import { AXIS_SQL, LIST_COLS, SQL_DETAIL, SQL_EXPORT, SQL_EXPORT_TAGS, SQL_RECORD_TAGS } from './queries';
 import { CursorInvalidError, NotFoundError } from './errors';
+import * as echo from './echo';
+import * as lookups from './lookups';
+import * as savedviews from './savedviews';
 import {
   asBool,
   asNumN,
@@ -107,47 +110,23 @@ export class DAO {
     return rows.map((r) => asStr(cell(r, 'name'), 'name'));
   }
 
-  /** 那年今日（P1-1，确定性时间锚）：本地时区 + 周年边界已修（复审注） */
-  echoToday(userId = 'local', limit = 10): CollectionItem[] {
-    const rows = this.st.get(SQL_ECHO).all(userId, limit) as Row[];
-    return rows.map(mapItem);
-  }
+  /** 那年今日（P1-1，确定性时间锚）：本地时区 + 周年边界已修（复审注）——实现见 echo.ts（G3 外拆腾位，IM-10a 先例同款） */
+  echoToday = (userId = 'local', limit = 10): CollectionItem[] => echo.echoToday(this.st, userId, limit);
+
+  // P1-10 命名视图（实现见 savedviews.ts；用户 2026-11-14 批准，评审案 docs/saved-views-review.md）
+  listSavedViews = (userId = 'local'): savedviews.SavedView[] => savedviews.listSavedViews(this.st, userId);
+  createSavedView = (name: string, queryJson: string, userId = 'local'): { id: string } => savedviews.createSavedView(this.db, this.st, name, queryJson, userId);
+  deleteSavedView = (id: string, userId = 'local'): { id: string } => savedviews.deleteSavedView(this.st, id, userId);
+  getViewByName = (name: string, userId = 'local'): savedviews.SavedView | undefined => savedviews.getViewByName(this.st, name, userId);
 
   // —— 仪表聚合（实现见 metrics.ts：stats 四计数机械搬移零行为变更 + 观察池 metricsCoverage 北极星；委托 PM §7.1 护栏）——
   stats = (): Stats => metrics.stats(this.st);
   metricsCoverage = (userId = 'local'): metrics.MetricsCoverage => metrics.metricsCoverage(this.st, userId);
 
-  /** FR-1 已收藏前置标记：按 (source, source_id) 批量查已存在（SQLite 变量上限，分块 100） */
-  existingSourceIds(source: string, sourceIds: string[]): Set<string> {
-    const found = new Set<string>();
-    for (let i = 0; i < sourceIds.length; i += 100) {
-      const chunk = sourceIds.slice(i, i + 100);
-      if (chunk.length === 0) continue;
-      const placeholders = chunk.map(() => '?').join(',');
-      const rows = this.st.get(`SELECT source_id FROM album_metadata WHERE source = ? AND source_id IN (${placeholders})`).all(source, ...chunk) as Row[];
-      for (const r of rows) found.add(asStr(cell(r, 'source_id'), 'source_id'));
-    }
-    return found;
-  }
-
-  /** 专辑行读取（封面懒下载 / 搜索响应锚定用）；不存在 → null */
-  getAlbum(albumId: string): AlbumRow | null {
-    const row = this.st.get('SELECT * FROM album_metadata WHERE id = ?').get(albumId) as Row | undefined;
-    return row ? mapAlbum(row) : null;
-  }
-
-  /** FR-1 捷径③（成员判定版）：候选专辑是否真的在 collection_record 中（搜索期会落 album_metadata，行存在 ≠ 已收藏） */
-  albumIdsInCollection(albumIds: string[]): Set<string> {
-    const found = new Set<string>();
-    for (let i = 0; i < albumIds.length; i += 100) {
-      const chunk = albumIds.slice(i, i + 100);
-      if (chunk.length === 0) continue;
-      const placeholders = chunk.map(() => '?').join(',');
-      const rows = this.st.get(`SELECT DISTINCT album_id FROM collection_record WHERE album_id IN (${placeholders})`).all(...chunk) as Row[];
-      for (const r of rows) found.add(asStr(cell(r, 'album_id'), 'album_id'));
-    }
-    return found;
-  }
+  // —— 查找域（实现见 lookups.ts：existingSourceIds/getAlbum/albumIdsInCollection 机械搬移，IM-10a 先例同款零行为变更）——
+  existingSourceIds = (source: string, sourceIds: string[]): Set<string> => lookups.existingSourceIds(this.st, source, sourceIds);
+  getAlbum = (albumId: string): AlbumRow | null => lookups.getAlbum(this.st, albumId);
+  albumIdsInCollection = (albumIds: string[]): Set<string> => lookups.albumIdsInCollection(this.st, albumIds);
 
   /** 全量导出投影（P1-3 §5.4 原形，永久免费）：tags 一次取回按 record_id 归组；全表读 = 内存纪律①唯一豁免 */
   exportAll(userId = 'local'): ExportPayload {

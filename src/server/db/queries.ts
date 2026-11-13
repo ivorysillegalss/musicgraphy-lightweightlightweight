@@ -88,3 +88,7 @@ export const SQL_TAG_GOV =
   'SELECT t.id, t.name, t.normalized_name, COUNT(rt.record_id) AS refs ' +
   'FROM tags t LEFT JOIN record_tag rt ON rt.tag_id = t.id ' +
   'WHERE t.user_id = ? GROUP BY t.id ORDER BY refs DESC, t.normalized_name LIMIT 500';
+
+// 命名视图创建密度（P1-10 → PRD §6 named_view_rate「周人均新建数」）：总数 + 首建时间（存活周数分母）
+export const SQL_NAMED_VIEW =
+  'SELECT COUNT(*) AS cnt, MIN(created_at) AS first_at FROM saved_views WHERE user_id = ?';

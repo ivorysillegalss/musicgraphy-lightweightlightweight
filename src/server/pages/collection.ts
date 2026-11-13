@@ -8,6 +8,7 @@
 import { html } from 'hono/html';
 import type { Filters } from '../db/sql';
 import type { CollectionItem, FacetCount } from '../db/types';
+import type { SavedView } from '../db/savedviews';
 import type { TagGovernance } from '../db/taggov';
 import type { AlbumSearchItem } from '../metadata/search';
 import { colorOf, coverCard, coverSrcOf, coverWallCards, echoCard, emptyWall, errorStrip, flashBanner, icon, resultStatus, siteHeader, type FlashKind, type LayoutOptions, layout } from '../html';
@@ -247,6 +248,73 @@ export function tagGovHint(g: TagGovernance): Esc {
   </div>`;
 }
 
+// ---------------------------------------------------------------- 命名视图（P1-10：只存查询状态不存集合，裁决案 4 附条件；评审案 docs/saved-views-review.md Q4/Q6/Q7）
+
+/** FilterState → query_json（02 §2.4 原形状：{axes:{genre,release_year,listened_period,favorite,tag,color}, q}） */
+export function filterToQueryJson(f: FilterState): string {
+  return JSON.stringify({
+    axes: {
+      genre: f.genre,
+      release_year: f.year,
+      listened_period: f.period,
+      favorite: f.fav || null,
+      tag: f.tag,
+      color: f.color
+    },
+    q: f.q
+  });
+}
+
+/** query_json → FilterState（容错：坏 JSON / 形状不符 → null）；恢复 = 展开成筛选参数 URL（URL 即状态不被破坏） */
+export function queryJsonToFilter(raw: string): FilterState | null {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return null;
+    const { axes, q } = parsed as { axes?: Record<string, unknown>; q?: unknown };
+    if (typeof axes !== 'object' || axes === null) return null;
+    const a = axes as Record<string, unknown>;
+    const year = typeof a['release_year'] === 'number' && Number.isInteger(a['release_year']) && (a['release_year'] as number) > 0 ? (a['release_year'] as number) : null;
+    const color = typeof a['color'] === 'number' && (a['color'] as number) >= 1 && (a['color'] as number) <= 16 ? (a['color'] as number) : null;
+    const period = typeof a['listened_period'] === 'string' && /^\d{4}$/.test(a['listened_period'] as string) ? (a['listened_period'] as string) : null;
+    return {
+      q: typeof q === 'string' && q !== '' ? q : null,
+      genre: typeof a['genre'] === 'string' && a['genre'] !== '' ? (a['genre'] as string) : null,
+      year,
+      period,
+      fav: a['favorite'] === true,
+      tag: typeof a['tag'] === 'string' && a['tag'] !== '' ? (a['tag'] as string) : null,
+      color
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** 命名视图区（舱顶一行）：视图 chips（恢复 = <a> 展开参数；删除 = 原生 form）+「保存当前筛选」（有激活筛选才显示）。 */
+export function savedViewsBar(views: SavedView[], f: FilterState): Esc {
+  const chips = views.map(
+    (v) => html`<span class="chip">
+    <a href="/?view=${v.name}" rel="nofollow" title="恢复视图（展开为筛选参数 URL）">${icon('chevron-right', 12)} ${v.name}</a>
+    <form method="post" action="/views/delete" style="display:inline;">
+      <input type="hidden" name="view_id" value="${v.id}">
+      <button class="btn-text" type="submit" style="padding:2px 4px; min-height:0; font-size:12px;" aria-label="删除视图 ${v.name}">${icon('x', 11)}</button>
+    </form>
+  </span>`
+  );
+  const saveForm = hasActiveFilter(f)
+    ? html`<form method="post" action="/views" style="display:inline-flex; gap:6px; align-items:center;">
+    <input class="input" name="name" placeholder="命名当前筛选（如「深夜电子」）" style="max-width:220px; min-height:36px;" aria-label="视图名称">
+    <input type="hidden" name="query_json" value="${filterToQueryJson(f)}">
+    <button class="btn btn-secondary" type="submit" style="min-height:36px; padding:6px 14px;">保存视图</button>
+  </form>`
+    : html`<span class="small" style="color:var(--color-muted-foreground);">先筛选出一组结果，即可命名保存（只存查询状态，不存专辑集合）。</span>`;
+  return html`<div class="saved-views" role="region" aria-label="命名视图" style="display:flex; flex-wrap:wrap; gap:var(--space-sm); align-items:center; margin-bottom:var(--space-lg);">
+    <span class="mono small" style="color:var(--color-accent-text);">SAVED VIEWS · 命名视图</span>
+    ${chips}
+    ${saveForm}
+  </div>`;
+}
+
 // ---------------------------------------------------------------- 页面组装
 
 export interface CollectionPageInput {
@@ -255,6 +323,8 @@ export interface CollectionPageInput {
   echo: CollectionItem | null;
   /** P1-6 Tag 轻治理候选（null = 无候选 / 馈赠失败 / 当季已关闭——routes cookie 语义）；空对象 = 不渲染 */
   tagHint: TagGovernance | null;
+  /** P1-10 命名视图（null = 馈赠失败 / 不渲染）；恢复动作在 routes 层（?view= → 303 展开） */
+  savedViews: SavedView[] | null;
   filter: FilterState;
   counts: AxisCounts | null;
   items: CollectionItem[];
@@ -272,6 +342,7 @@ export function renderCollection(d: CollectionPageInput, layoutOpts: Omit<Layout
 <main>
   ${flashBanner(d.flash, d.dupHref ?? undefined, d.flash === 'duplicate' && d.dupHref !== null ? `${d.dupHref}/relisten` : undefined)}
   ${d.echo === null ? '' : echoCard(d.echo)}
+  ${d.savedViews === null ? '' : savedViewsBar(d.savedViews, d.filter)}
   ${d.tagHint === null ? '' : tagGovHint(d.tagHint)}
   <div data-island="filter-cabin">
     ${cabinSection(d.filter, d.counts)}

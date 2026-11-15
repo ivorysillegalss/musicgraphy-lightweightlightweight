@@ -68,7 +68,8 @@ Musicgraphy-2.0-文档包\
     ├── 五维技术复审报告.md     （2026-11-11 新增）
     ├── 实现决策记录.md         （2026-11-11 新增，W0 起持续追加）
     ├── 评审案-多用户并发与封面缓存.md （2026-11-14 新增，IM-22；已追认执行 = B4 卡 done 016c100）
-    └── 评审案-网易云专辑导入器.md     （2026-11-14 新增，IM-23；已追认执行 = B5/B7 卡 done 7aa21af/ba24eb4）
+    ├── 评审案-网易云专辑导入器.md     （2026-11-14 新增，IM-23；已追认执行 = B5/B7 卡 done 7aa21af/ba24eb4）
+    └── 评审案-地理渲染引擎选型.md     （2026-11-15 新增，DR-M1；推荐 MapLibre 待追认）
 07-前端设计包\                        （15 份，设计层，ui-ux-pro-max 流程）
 ├── 00-README.md
 ├── 01-设计系统PRD.md
@@ -198,6 +199,24 @@ Musicgraphy-2.0-文档包\
                B `source=netease` 直建行 / fail-soft 可选服务 /
                cookie 即用即弃 / CLI 形态；v1 地图/发现池不建议
                立项）。已实现（Q1–Q6 全按建议值 + B7 后置半截）。
+  评审案-地理渲染引擎选型.md      地图模块渲染引擎选型评审案（2026-11-15 新增，
+               DR-M1 评审闸门卡 = 设计参考 03 §5.3/§5.5 波次 1；**待用户
+               追认**——评审案先行 = IM-22/23 先例，D3 派工按推荐先行、
+               否决可回滚）：四候选矩阵（MapLibre GL JS / Mapbox GL JS /
+               three.js·globe.gl / 纯 Canvas 2D 自研）× 八维度对比
+               （globe/自托管/License/token/包体积观察值/DR-M0 端口接缝/
+               社区活跃度/红线合规）+ 推荐理由链（数据 = 自托管 GeoJSON
+               177 国 243KB 无任何外部瓦片诉求，MapLibre 仅作「投影+渲染
+               +拾取」引擎，与乙-5 完全兼容；globe projection v5.0 正式
+               内置 = 复刻「3D 是引擎送的」结论）+ 红线逐条核对表
+               （乙-5 零 CDN / 隐私零外发含 AttributionControl 处置 /
+               BSD-3 合规义务 / 乙-1 URL 即状态边界 / G1 依赖 2→3 /
+               G2 懒加载 chunk 不进首屏 / glyphs 自托管披露 / check 基线
+               199/199）+ 实施影响面 + 待追认三件（引擎裁决 /
+               maplibre-gl 入 dependencies / /atlas 挂载）。推荐 =
+               MapLibre GL JS v5+（npm latest 6.18.0 / v5 线 5.24.1；
+               License 实测 BSD-3-Clause——派工原文 BSD-2 系笔误，按
+               实测登记）。
 
 【06-PM排期与研发可持续性计划】PM 视角执行排期（2026-11-11）
   全需求统一入池（FR/P1/ADR/PM 补充）→ 三段式排期：

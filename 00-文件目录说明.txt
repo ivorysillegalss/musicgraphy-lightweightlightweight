@@ -326,3 +326,12 @@ Musicgraphy-2.0-文档包\
  工作区全量归档（含两仓源码 + tools，排除 node_modules/.zcode）由
  tools/rezip-workspace.ps1 生成（2026-11-13 首建）
 =====================================================================
+
+workspace-context/（2026-11-15 新增 · 仅存在于同仓 workspace-context 分支）
+---------------------------------------------------------------------
+  分支附件目录：用户令「文档包包括 AGENTS.md 全量 push 到新分支，切换新工作
+  环境直接读取获得完全一致开发体验」。本目录随 workspace-context 分支推
+  GitHub 远端（同主线仓 origin），含 AGENTS-workspace-root.md / 
+  AGENTS-user-memory.md / AGENTS-legacy-repo.md 三副本 + tools/ 两份 ps1 +
+  RESTORE.md 新环境重建指引。main 分支（本索引所在）不含此目录；
+  重建步骤与目录布局见 workspace-context/RESTORE.md。

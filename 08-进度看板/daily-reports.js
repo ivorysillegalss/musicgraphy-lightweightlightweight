@@ -79,6 +79,15 @@ window.MG_DAILY_REPORTS = {
             '收口后基线：主线 HEAD dae9ae0（check 182/182 全绿）；护栏 G3 dao.ts 192<200 零改动、G1 = 2；看板三卡 + 补登注记 + G3/G4 evidence 已同步并重部署。',
           ],
         },
+        {
+          heading: '第一阶段 release（补记 · 同日晚 · 用户指令）',
+          kind: 'list',
+          items: [
+            '主线仓 main → 远程首推 https://github.com/ivorysillegalss/musicgraphy-lightweightlightweight（用户指定仓；origin 已配置并 set-upstream 跟踪）。第一阶段 release 基线 = dae9ae0（与上行「收口后基线」同 commit，以现在内容为基准零新增改动）。',
+            '推送前核查：未提交在制品 = 零（此前 WIP 已随 D1-D4/W8-9 收口入库）；tracked 敏感排查零命中（.gitignore 护住 data//.env/node_modules/dist/tools；.env.example 仅为 change-me 占位）；目标仓推送前 ls-remote 核实为空仓（单拼名 musicgraphy-lightweight 经核实不存在）。',
+            '发布基线门禁复跑（推送后本机）：tsc/eslint/vite build 全绿 + test 182/182——本日共 8 跑：首跑 1 例失败未复现且名称未捕获，其后连续 7 轮 182/182 全绿，判间歇性时序敏感用例（与踩坑备忘 boot 备份竞态同族），不影响基线放行；后续复现时捕获名称另登记。',
+          ],
+        },
       ],
 
       evidence: [
@@ -86,6 +95,7 @@ window.MG_DAILY_REPORTS = {
         { label: '看板', value: 'meta.lastSync → 2026-11-15；SHIP subtitle 补「余 = 用户发布 + 决策门」；relations「后端→前端」阻塞点销项（B1 已完成）；00 索引两评审案「待追认」→「已追认执行」' },
         { label: '事实源', value: '剩余工作明细与全部 hash/路径/数字 = progress-data.js 各卡 evidence + 02-变现文档包/08·09·10·11·12' },
         { label: '补记证据', value: '主线 c9e1692（D1）/ 3378964 + b3ff02c（D4）/ dae9ae0（B9 埋点，16 files +442/-34）/ 824c72f（P1-4 评审案）；评审案 = musicgraphy/docs/telemetry-review.md + palette-review.md；IM-27/28/29；check 182/182' },
+        { label: 'release 基线', value: 'origin = github.com/ivorysillegalss/musicgraphy-lightweightlightweight（空仓首推 main→main 新建分支；单拼名 musicgraphy-lightweight ls-remote 核实不存在）；基线 dae9ae0；门禁复跑 7×182/182（首跑 1 间歇未复现）；tracked 敏感排查零命中' },
       ],
     },
 

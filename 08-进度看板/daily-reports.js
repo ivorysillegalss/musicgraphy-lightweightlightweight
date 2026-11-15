@@ -146,6 +146,16 @@ window.MG_DAILY_REPORTS = {
             '落点：SPECIAL 专区建卡 20 张 = 原理分析卡 S2-8~S2-11（done，evidence = 拆解文档各站节+证据清单）+ 分割候选卡 S2-12~S2-27（pending）；S2-4~S2-7 各补 history v2 指针；全板 48→68 卡（SPECIAL 线 6→26 卡）。**分割卡 = 筛选候选非排期承诺**——后期用户筛选组合（三个 P4 可选段音频源合规评审后立项、无源即砍）；与 Radiooooo DR 草案卡留文档内的口径不同（本令明确「计入专项」故建看板卡，协议 §7⑥ 登记）。事实源 = 需求草案-2026-11-15-设计参考第二批.md 第二部分。本批零代码变更纯登记；随本批提交并重部署线上。',
           ],
         },
+        {
+          heading: '设计参考四站第一批实现收口（补记 · 同日晚 · 用户指令「并行开始实现」）',
+          kind: 'list',
+          items: [
+            '用户令「现在都将他们并行开始实现吧 调度和执行的规则都交给你」。调度规则 = 宿主单子 Agent 现实下的文件边界级并行（评审案先行成文 → 数据层/页面层/测试层波次推进）；评审案 musicgraphy/docs/design-refs-review.md（Q1–Q11 技术决策留档；Q1′ 披露 /atlas 已被并行会话 DR globe 页占用，R-106 图集改称 /panorama=收藏全景）。',
+            '四入口上线（主线 commit 0ab7a4d，17 文件 +1665）：/genres = R-109 流派星图（纯 SSR 绝对定位标签，db/genremap.ts Genre×Tag 共现 + overlap 相似度 + mulberry32 固定种子确定性力导向 + x/y 独立归一化——IAB 目检发现 hub 型宽扁图 y 轴塌缩后修正，everynoise readability-adjusted 同款取舍；CLI 真库实跑 42 节点/861 边/4.8KB 产物）；/crate = R-108 翻箱（CSS 3D 侧脊陈列 + crate-flip 键盘流 1.9KB + /fragment/crate 续箱 cursor 顺链 + /random 302 实测 Location=/album/6ad94b85…）；/panorama = R-106 收藏全景（db/panorama.ts decade×首流派预计算 + Canvas LOD 岛屿 4.9KB：拖动/滚轮/双指/点击命中→详情/?x&y&z URL 即状态；全表读豁免第二则真库实测 5185 节点 621KB/254ms/RSS 峰值 101MB 观察指标口径）；R-107 = 页脚第一人称入口行 + POST /settings/sensory 感官层开关（mg_sensory 缺省安静，metrics/toggle 先例同款）。',
+            '门禁 npm run check 全绿 229/229（基线 200+本批 17+并行 globe 12，含并行会话未提交 WIP 同树复跑）；测试 +17（genremap.smoke 6 项含共现手工对账 7 边/确定性/空档案 + crate-atlas.smoke 11 项含守卫拓扑/开放重定向防护/CSRF 403）；IAB 真库目检三页全过（星图 hub 结构/翻箱木箱质感真实封面/全景年代×流派点阵）。',
+            '边界披露：①main.ts 未入 0ab7a4d——并行会话同文件在制品含 globe-view 引用（其五件未提交），本提交带入即破构建；两岛屿文件已入库，注册行随并行会话收口顺延生效（loader 对未注册岛屿优雅跳过，SSR 完整可用）②app.css 捎带并行会话 globe 样式 hunk（惰性无害，归属其会话）③音频段 S2-15/18/19/27 按卡面约定维持后置（音频源合规评审未过，感官层开关已就位）④看板 12 卡置 done（evidence 全可核查）+ 音频 4 卡后置注记，全板 68 卡（SPECIAL done 16/pending 10）。',
+          ],
+        },
       ],
 
       evidence: [
@@ -157,6 +167,7 @@ window.MG_DAILY_REPORTS = {
         { label: '看板改版证据', value: 'node --test tests/ 11 项全绿（+字段完整性断言 + scope 词表 16 域）；语法自检 ok（tracks=7 / cards=44）；六件变更 = app.js / progress-data.js / 看板更新协议.md / 00-文件目录说明.txt / tests/docpackage.test.mjs / daily-reports.js；随本批提交并重部署线上' },
         { label: '设计参考第二批', value: '需求草案 R-106~R-109（01-产品理念终稿/需求草案-2026-11-15-设计参考第二批.md 新建）+ SPECIAL 专区 S2-4~S2-7 pending（progress-data.js 全板 44→48 卡）；站点核查 = 页面抓取 + github.com/risq/cratedigger README；node --test tests/ 全绿；随本批提交并重部署线上' },
         { label: '0→1 分割登记', value: '原理分析卡 S2-8~S2-11（done，四站证据级拆解：cratedigger 源码级/everynoise 源页级/albumatlas·chiara 浏览器实测级）+ 分割候选卡 S2-12~S2-27（pending，每站 P1→P4 链，后期筛选）；全板 48→68 卡；事实源 = 需求草案第二批文档第二部分；协议 §7⑥；node --test tests/ 全绿；随本批提交并重部署线上' },
+        { label: '四站实现收口', value: '主线 0ab7a4d（17 文件 +1665）：/genres /crate /panorama /random 四入口上线；check 229/229 全绿；测试 +17；CLI 真库 42 节点/861 边；IAB 目检三页全过；看板 12 卡 done + 音频 4 卡后置注记；main.ts 注册行随并行会话顺延（披露）；评审案 = musicgraphy/docs/design-refs-review.md' },
       ],
     },
 

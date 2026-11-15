@@ -223,8 +223,12 @@ Musicgraphy-2.0-文档包\
                  调音台 + Canvas 示波器）与 Mapbox GL 地球展现整体实现
                  （globe 投影 + 自托管 GeoJSON 分桶 + feature-state 五态
                  染色 + 相机编排）；含对 R-103/专项二 S-B 的启示映射与
-                 乙-5 零 CDN 红线冲突披露。性质 = 设计参考素材（只读
-                 参照），非需求非裁决；实施引用须走评审案。
+                 乙-5 零 CDN 红线冲突披露。v1.1 增 §5 模拟实现 0→1
+                 草案卡 14 张（DR-G/M/A/V/I 五线：落点/依赖/规模/波次
+                 建议，M1 = 引擎选型评审闸门卡，A 线整线标产品准入
+                 待裁决）——供 PM 排期分析；未建看板卡，立项走协议
+                 §7③。性质 = 设计参考素材（只读参照），非需求非裁决；
+                 实施引用须走评审案。
   MASTER.md      设计系统 Source of Truth（Style = Minimalism &
                  Swiss；配色 = 暖墨+琥珀注记于奶油纸面；三层字体栈
                  Playfair/Inter/JetBrains Mono；深色模式预案）。

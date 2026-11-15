@@ -67,12 +67,25 @@ window.MG_DAILY_REPORTS = {
             '观察池只认信号不认日期：真虚拟滚动 / 位图导出（案 B）/ R5 跨源轮转 / 密度三档等——信号触发再议，无排期。',
           ],
         },
+        {
+          heading: '补记（同日晚 · 四项执行令收口）',
+          kind: 'list',
+          items: [
+            '实况修正：用户同日另有「修复 D1-D4」裁决令，已由并行会话（D1-D4 会话）收口——主线 c9e1692（D1 页面守卫修复，IM-27）/ 3378964 + b3ff02c（D4 主线在制品两笔原样入库）/ D2 双仓永久封存 / D3 alias_sources 以主线为唯一权威（00-硬约束 v1.2）。上表「待用户裁决」第 1/2/3 项就此销项（第 4/5/6 项仍在）；该会话交付未同步看板，收口会话按协议「以代码为事实源」补登。',
+            '① installAuth 页面守卫修复 = 核验通过（c9e1692，IM-27，check 173/173）：并行会话已交付，看板 B8 卡补登置 done。',
+            '② W8-9 行为埋点立项落地（B9 卡，主线 dae9ae0，check 182/182）：评审案 docs/telemetry-review.md 先行（Q1–Q5 全按建议值）→ 0005 telemetry_days 天粒度聚合计数（匿名零外发，非事件表）→ db/telemetry.ts 域（dao.ts 零改动 G3）→ 四路由接线（echo 曝光 / 详情 + ?from=echo 归因 + note 回访 / 搜索失败口径 / 导出计数）→ 28 天窗口实算四值（0/0 → null 勿伪造）；IM-28。',
+            '③ P1-4 色板设计裁决（DESIGN 线 P1-4 卡，主线 824c72f，零 src 改动）：色板维持 + 蓝轴如实 + 密度三档→观察池 O9（W3-1 移交项销项）；IM-29。',
+            '④ 观察池确认：O1–O8 维持原状（只认信号不认日期）+ 新增 O9（密度切换档）；12 号文档 §6 登记。',
+            '收口后基线：主线 HEAD dae9ae0（check 182/182 全绿）；护栏 G3 dao.ts 192<200 零改动、G1 = 2；看板三卡 + 补登注记 + G3/G4 evidence 已同步并重部署。',
+          ],
+        },
       ],
 
       evidence: [
         { label: '复核口径', value: '以代码与卡片 evidence 为准逐线核对（2026-11-15）；零代码变更日，门禁沿用 173/173（HEAD ba24eb4）' },
         { label: '看板', value: 'meta.lastSync → 2026-11-15；SHIP subtitle 补「余 = 用户发布 + 决策门」；relations「后端→前端」阻塞点销项（B1 已完成）；00 索引两评审案「待追认」→「已追认执行」' },
         { label: '事实源', value: '剩余工作明细与全部 hash/路径/数字 = progress-data.js 各卡 evidence + 02-变现文档包/08·09·10·11·12' },
+        { label: '补记证据', value: '主线 c9e1692（D1）/ 3378964 + b3ff02c（D4）/ dae9ae0（B9 埋点，16 files +442/-34）/ 824c72f（P1-4 评审案）；评审案 = musicgraphy/docs/telemetry-review.md + palette-review.md；IM-27/28/29；check 182/182' },
       ],
     },
 

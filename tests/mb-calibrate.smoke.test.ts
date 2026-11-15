@@ -323,6 +323,28 @@ describe('B7 MB 按需权威化（IM-23 Q1 路线 B 后置半截）', () => {
     }
   });
 
+  test('续跑补 genres（R-110 收口）：alias 已含 MB 但 genres 空的行 → 复用 alias MBID 直达 lookup 零搜索，填后幂等', async () => {
+    const f = tempDb('genres-resume');
+    try {
+      const id = seedNetease(f.db, f.dao, '范特西');
+      f.db.prepare('UPDATE album_metadata SET alias_sources = ? WHERE id = ?').run('[{"source":"musicbrainz","source_id":"mbid-x"}]', id); // 模拟本轮前运行遗留
+      const existing = new Map([['jazz', 'Jazz']]);
+      const { client, calls, lookups } = stubClient([], async () => ['Rock', 'jazz']); // resolve 脚本空 → 任何搜索调用都会暴露
+      const s = await calibrateRows(f.dao, listNeteaseRows(f.db), client, { existingGenres: existing });
+      assert.equal(s.calibrated, 1);
+      assert.equal(s.genresFilled, 1);
+      assert.deepEqual(calls, [], '零搜索（复用 alias MBID 直达 lookup）');
+      assert.deepEqual(lookups, ['mbid-x']);
+      const a = albumOf(f.db, id);
+      assert.deepEqual(a.genres, ['Rock', 'Jazz'], '查重沿用 + 未命中首字母大写');
+      const s2 = await calibrateRows(f.dao, listNeteaseRows(f.db), client); // genres 已齐 → 幂等零 lookup
+      assert.equal(s2.calibrated, 1);
+      assert.deepEqual(lookups, ['mbid-x'], '第二次零 lookup');
+    } finally {
+      f.cleanup();
+    }
+  });
+
   test('归并未落原行（同 MBID 已被他行主键占用）→ failed 如实报告，原行不动', async () => {
     const f = tempDb('split');
     try {

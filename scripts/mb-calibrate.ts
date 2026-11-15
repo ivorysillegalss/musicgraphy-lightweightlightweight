@@ -119,11 +119,39 @@ export async function calibrateRows(
     if (summary.failures.length < FAILURE_CAP) summary.failures.push(msg);
   };
   for (const row of rows) {
-    const already = row.alias_sources.some((a) => a.source === 'musicbrainz');
-    if (!already && attempts >= maxAttempts) break; // 额度只管需 resolve 的行；余下不计入 checked
+    const mbRef = row.alias_sources.find((a) => a.source === 'musicbrainz') ?? null;
+    const needsGenres = row.genres.length === 0;
+    if (mbRef === null && attempts >= maxAttempts) break; // 额度只管需 resolve 的行；余下不计入 checked
     summary.checked++;
-    if (already) {
-      summary.calibrated++; // 已权威化：幂等跳过（零上游零写入）
+    if (mbRef !== null) {
+      // 已权威化行：genres 已齐 → 幂等跳过；genres 空（本轮前运行遗留）→ alias MBID 直达 lookup
+      // 补 genres（零搜索零 resolve，不占 --limit 额度；R-110 收口——旧逻辑「alias 即跳过」会让
+      // 本轮前处理的行 genres 永远补不上）
+      if (needsGenres && !dryRun) {
+        let genresValue: string[] | undefined;
+        try {
+          const normalized = normalizeGenres(await client.lookupReleaseGenres(mbRef.source_id), existingGenres);
+          if (normalized.length > 0) genresValue = normalized;
+        } catch {
+          // genre lookup 失败 → 本轮跳过（次轮定时重试）
+        }
+        if (genresValue !== undefined) {
+          const { id } = dao.upsertAlbum({
+            source: 'musicbrainz',
+            source_id: mbRef.source_id,
+            title: row.title,
+            artist: row.artist,
+            genres: genresValue
+          });
+          if (id !== row.id) {
+            summary.failed++;
+            pushFailure(`${row.artist} - ${row.title}: 续跑 genres 归并未落原行（upsert→${id}）`);
+            continue;
+          }
+          summary.genresFilled++;
+        }
+      }
+      summary.calibrated++; // 行处理完毕（幂等跳过 / genres 补齐 / lookup 失败待下轮）
       continue;
     }
     if (row.title === '' || row.artist === '') {

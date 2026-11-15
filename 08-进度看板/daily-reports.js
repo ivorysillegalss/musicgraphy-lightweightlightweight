@@ -166,6 +166,15 @@ window.MG_DAILY_REPORTS = {
             '③随本批提交并重部署线上：看板六件复制覆盖 stage 重建（禁 patch 旧 stage）+ ZCode Site CLI 部署（siteId 2120913580313718784），部署后线上 progress-data.js 应可检索 S2-28。',
           ],
         },
+        {
+          heading: '设计参考第二批实现收口 · 音频段（补记 · 同日晚 · 用户指令「继续执行第二批…回写看板和git push」）',
+          kind: 'list',
+          items: [
+            '音频源评审随批留档 = musicgraphy/docs/design-refs-review.md Q12–Q14：Q12 源 = iTunes song 实体 30s previewUrl（album 实体无预览实测口径），复用 ITunesSource 既有全局串行队列 + 20/min 门 + UA + fetchFn 注入 = 零新限流通道（乙-4）；SourceChain.byName 直查源实例零落库副作用（不走 chain.search/searchAlbums 防候选写行）；严格档（专辑名+艺术家全等）/宽松档（仅专辑名）匹配护栏防错碟，全 miss → 404 preview_unavailable 诚实 fail-soft；进程缓存 null 防重打 + single-flight，零迁移列（预览 URL 易变随重启自然重解析）。Q13 同源代理流式（c.body(upstream.body) 12s 超时 + 串行信号量一次一路零落盘），选代理非 302 三理由 = ①同源 AnalyserNode 无 CORS 污染②用户 IP 不出本机③缓存头可控。Q14 低依赖替代 = AnalyserNode + Canvas 2D 时域示波器（07 包 03 号 Radiooooo 拆解 §2.2 同款零新依赖）。',
+            '四卡落地（主线 commit 3532749，15 文件 +543/-27，已推 origin ca48ba5..3532749）：S2-15 panorama P 键就地试听（悬停命中 + 再按暂停 + 无预览静默）；S2-18 详情页 <audio preload=none> 零预取 + /album/:id/preview 同源代理 + audio-viz 岛屿根；S2-19 audio-viz 示波器（第 10 岛屿，fftSize 512 rAF 波形，暂停 cancel，WebAudio 不可用诚实降级）；S2-27 genre-scan 扫听（第 9 岛屿，everynoise scan() 同构逐节点试听 + gnode-playing ♫ 纯 CSS + genremap 节点 MIN(record id) 代表记录内联 + 无预览诚实跳过）。',
+            '门禁 npm run check 全绿 263/263（= 基线 257+本批 6）；测试 preview.smoke 6 项（fail-soft 404/缓存直读流式 AUDIOBYTES 透传/record_not_found/守卫 302/preload=none 断言/data-sample 内联）；依赖 3 不变（本批零新增）；看板 SPECIAL done 21/pending 6（全板 70 卡）——四站 0→1 全部 16 张实现卡 done（第一批 12 + 第二批 4）。收口三步 = node --test 11/11 → 文档包提交 → 重部署线上。',
+          ],
+        },
       ],
 
       evidence: [
@@ -179,6 +188,7 @@ window.MG_DAILY_REPORTS = {
         { label: '0→1 分割登记', value: '原理分析卡 S2-8~S2-11（done，四站证据级拆解：cratedigger 源码级/everynoise 源页级/albumatlas·chiara 浏览器实测级）+ 分割候选卡 S2-12~S2-27（pending，每站 P1→P4 链，后期筛选）；全板 48→68 卡；事实源 = 需求草案第二批文档第二部分；协议 §7⑥；node --test tests/ 全绿；随本批提交并重部署线上' },
         { label: '四站实现收口', value: '主线 0ab7a4d（17 文件 +1665）：/genres /crate /panorama /random 四入口上线；check 229/229 全绿；测试 +17；CLI 真库 42 节点/861 边；IAB 目检三页全过；看板 12 卡 done + 音频 4 卡后置注记；main.ts 注册行随并行会话顺延（披露）；评审案 = musicgraphy/docs/design-refs-review.md' },
         { label: 'S2-28 转正', value: '主线 1fde125/b180dd7/27d9e46/950df06 + 文档包 5db47b4/76849cc，check 257/257' },
+        { label: '音频批收口', value: '主线 3532749（15 文件 +543/-27）已推 origin：/album/:id/preview 同源代理流式 + 详情试听（preload=none）+ audio-viz/genre-scan 两岛屿 + panorama P 键；评审案 Q12–Q14；check 263/263；测试 +6；依赖 3 不变；看板 SPECIAL done 21/pending 6' },
       ],
     },
 

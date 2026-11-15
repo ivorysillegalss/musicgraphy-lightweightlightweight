@@ -61,6 +61,13 @@ describe('封面落盘（F3）', () => {
       CoverDownloadError
     );
   });
+
+  test('非标准 Content-Type image/jpg（网易云 CDN）→ 按 jpeg 放行落盘 .jpg（2026-11-15 导入实测回归：181/181 封面曾被拒）', async () => {
+    const jpg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+    const jpgFn = (async () => new Response(jpg, { status: 200, headers: { 'Content-Type': 'image/jpg' } })) as typeof fetch;
+    const name = await downloadCover({ coverUrl: 'u', coversDir: join(dir, 'c4'), userAgent: 't', fetchFn: jpgFn });
+    assert.match(name, /^[0-9a-f]{64}\.jpg$/);
+  });
 });
 
 describe('备份（R1/V14）', () => {

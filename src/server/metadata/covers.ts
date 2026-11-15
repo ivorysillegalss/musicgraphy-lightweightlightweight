@@ -18,6 +18,7 @@ export const COVER_FILE_RE = /^[0-9a-f]{40,64}\.(jpg|jpeg|png|webp|gif)$/;
 
 const EXT_BY_TYPE: Record<string, string> = {
   'image/jpeg': '.jpg',
+  'image/jpg': '.jpg', // 网易云 CDN 的非标准 Content-Type（字节即 jpeg；2026-11-15 导入实测 181/181 被拒后放行）
   'image/png': '.png',
   'image/webp': '.webp',
   'image/gif': '.gif'

@@ -19,7 +19,7 @@ export function renderAtlas(layoutOpts: Omit<LayoutOptions, 'body'>): ReturnType
     + 主题切换（奶油纸面 / 暗色）。专辑维度接线（产地/国籍/发行地区 → 可用性白名单与 URL 即状态）
     归 R-106 后续评审——本页是机制底稿与验收面。
   </p>
-  <div class="globe-view" data-island="globe-view" data-theme="light" role="img" aria-label="专辑地图骨架：自托管国家边界地球"></div>
+  <div class="globe-view" data-island="globe-view" data-theme="light" data-playback="mock" role="img" aria-label="专辑地图骨架：自托管国家边界地球"></div>
   <noscript>
     <p class="small" style="color:var(--color-muted-foreground); margin-top:var(--space-md);">
       地图需要 JavaScript（渐进增强岛屿）。你的档案数据不受影响——返回 <a href="/">Collection</a> 继续检索与整理。

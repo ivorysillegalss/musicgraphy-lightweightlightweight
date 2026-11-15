@@ -14,8 +14,8 @@ window.MG_PROGRESS = {
     project: 'Musicgraphy 2.0',
     line: '方案 B · 12 周验证冲刺（排期日历 W0 = 2026-11-16 起算）',
     mainlineRepo: '../musicgraphy/',
-    lastSync: '2026-11-14',
-    syncNote: '看板展现改版（2026-11-14 用户裁决）：按 设计/数据爬取/后端/前端/集成发布/运维护栏 六主线重组，卡片串行列举 + 前置依赖（deps）与线间关系（relations）显式化；原 W 卡内容一字未删仅重新编组；新增里程碑卡 D0/D1（设计线文档事实源补登）与待追认卡 B1/B2/B3（07 设计包 02 拆分方案 §8 第三波）；app.js 渲染器经用户授权改为主线视图（协议 §1/§3/§5 已同步修订登记），index.html 未动',
+    lastSync: '2026-11-15',
+    syncNote: '看板展现改版（2026-11-14 用户裁决）：按 设计/数据爬取/后端/前端/集成发布/运维护栏 六主线重组，卡片串行列举 + 前置依赖（deps）与线间关系（relations）显式化；原 W 卡内容一字未删仅重新编组；新增里程碑卡 D0/D1（设计线文档事实源补登）与待追认卡 B1/B2/B3（07 设计包 02 拆分方案 §8 第三波）；app.js 渲染器经用户授权改为主线视图（协议 §1/§3/§5 已同步修订登记），index.html 未动；2026-11-15 全量复核（用户令「更新整体进度」）：实现面收口——计数主线 33/33 done（全板 38 卡 = 34 done + 4 watch），B1/B2/B3 已追认并完成，SHIP 余用户亲手发布与 W12 决策门',
   },
 
   tracks: [
@@ -203,7 +203,7 @@ window.MG_PROGRESS = {
     {
       id: 'SHIP', short: '集成发布', status: 'in_progress', counted: true,
       title: '⑤ 集成发布主线 · 跨线收口 / 场景验收 / 发布与决策门',
-      subtitle: '端到端加验 → 周末门禁 → 集成收口 → 留存包 → Topster 与决策门（对应 PM §3/§4 节奏）',
+      subtitle: '端到端加验 → 周末门禁 → 集成收口 → 留存包 → Topster 与决策门（对应 PM §3/§4 节奏）；agent 可交付面全 done，余 = 用户亲手发布与 W12 决策门判定',
       cards: [
         { id: 'W0-6', title: '加验：服务端端到端', status: 'done',
           deps: ['W0-4', 'W0-5'],
@@ -270,7 +270,7 @@ window.MG_PROGRESS = {
     { from: '数据爬取线', to: '后端线', type: '供给', level: 'info',
       text: '元数据代理/跨源降级链以「路由 + album-store 写入」形态并入后端 API（W1-2/W1-3/W2-2）；封面经 /covers 懒下载对外服务。爬取线的产出 = 后端可出数的来源；W1-2 的前置 W0-3（MusicBrainz/CAA 链路确认）即本关系的第一环。' },
     { from: '后端线', to: '前端线', type: '供给', level: 'info',
-      text: 'DAO + 路由契约（records/collection/metadata/echo）决定 SSR 页面与岛屿能渲染什么。当前阻塞点：P1-5「最近艺术家联想」渲染被 B1（DAO 缺 getAssociations，IM-16）压住——B1 完成 = 前端渲染解锁。' },
+      text: 'DAO + 路由契约（records/collection/metadata/echo）决定 SSR 页面与岛屿能渲染什么。后端供给已完备（2026-11-14 复核：B1 联想域完成，P1-5「最近艺术家联想」渲染解锁，IM-16 闭环；B2 导出 / B3 仪表同期收口）。' },
     { from: '前端线', to: '数据爬取线', type: '验收', level: 'info',
       text: '场景实测反向验收数据链路：W4-6-2 三筛找回实测（27 张一屏收敛）验证了降级链计数与封面可见；W4-6-1 剩余的颜色轴场景实测须待主色回填（W4-6-3 管线就绪、真库 covers 落库后执行）。' },
     { from: '集成发布线', to: '全线', type: '收口', level: 'info',
@@ -280,6 +280,7 @@ window.MG_PROGRESS = {
   ],
 
   notes: [
+    { level: 'info', text: '2026-11-15 全量复核（用户令「更新整体进度」）：实现面收口——五条计数主线 33 卡全 done（进度条 100%；全板 38 卡 = 34 done + 4 watch）。SHIP 线保持 in_progress = 如实呈现余量（landing 上线 / 赞助链接 / 全渠道发布与 W12 决策门判定归用户亲手）；agent 侧无必须立即修改的代码，剩余工作按执行主体清单化于日报页 2026-11-15 条目（用户亲手 4 项 / 待裁决 6 项 / agent 可做 4 项）。' },
     { level: 'info', text: '2026-11-14 看板新增「每日日报」页（用户裁决「在看板中新开一页记录每日的日报」）：新增 daily.html / daily.js / daily-reports.js 三件 + index.html 顶部入口链接一处（协议 §1/§2/§7 已登记）；每日收口时在 daily-reports.js 头部追加当日条目，历史条目只增不改。首篇 = 2026-11-14 通宵总攻日报（B1/B2/B3/B4/B5/B7、W7-9-1、W10-12-1、W4-6-1、D2 十卡收口，check 173/173）。另按协议「以代码为事实源」修正主线汇总状态：CRAWL/BACKEND in_progress→done（其下实现卡全 done，2026-11-14 复核）；SHIP 保持 in_progress（发布动作归用户执行中）。' },
     { level: 'info', text: '2026-11-14 看板展现改版（用户裁决）：视图由「PM 周阶段」重组为六条主线——设计 / 数据爬取 / 后端 / 前端 / 集成发布 / 运维护栏；全部卡片在各主线内按串行依赖序列举（#序号 + 前置依赖），线间供给/验收/收口/约束关系见「主线间关系」区。原周卡编号（W0-1…W10-12-1）与全部证据记录原样保留，仅重新编组；新增卡均带「卡源」标注；app.js 渲染器经同一裁决改为主线视图（协议已登记），index.html 未动。' },
     { level: 'info', text: '工作区硬约束（2026-11-13）：主线仓 = ../musicgraphy/（唯一开发位）；Musicgraphy-2.0-代码库 = 只读存档（禁写禁删，归属调整须用户裁决）；文档包 = 唯一事实源（回写+索引+zip）；完成即同步看板。全文见 ../00-工作区关系与硬约束.md——agent 开工前必读。看板线上镜像：musicgraphy-progress-ohqn.zai-ai.site' },

@@ -15,12 +15,67 @@ window.MG_DAILY_REPORTS = {
     project: 'Musicgraphy 2.0',
     purpose: '每日日报——当天做了什么、裁决了什么、移交了什么（与进度看板互为表里：看板记卡片终态，日报记过程与全貌）',
     created: '2026-11-14',
-    lastEntry: '2026-11-14',
+    lastEntry: '2026-11-15',
     boardLink: 'index.html',
     dataNote: '卡片级长期事实源 = progress-data.js（各卡 evidence 可核查 hash/路径/数字）；本页条目与其保持一致，冲突时以代码与卡片 evidence 为准',
   },
 
   reports: [
+    // ================= 2026-11-15 =================
+    {
+      date: '2026-11-15',
+      title: '全面收口态：计数主线 33/33 卡 done，项目转入「发布 + 决策门」阶段',
+      summary: '今日无新实现卡——应用户令「更新整体进度」做全量复核，把看板推进到实现面终点：五条计数主线 33 卡全部 done（进度条 100%；全板 38 卡 = 34 done + 4 watch 护栏）。DESIGN / CRAWL / BACKEND / FRONTEND 四线 done；SHIP 线 agent 可交付面 done、保持 in_progress 如实呈现余量（发布动作与 W12 决策门判定归用户亲手）；OPS 持续 watch。agent 侧没有必须立即修改的代码——剩余工作全部按执行主体清单化于下，绝大多数在用户手里或待用户裁决。补记：昨日日报证据栏「六主线 35 卡」应为 38 卡（B4/B5/B7 三卡建卡后总数），以本条为准。',
+
+      stats: [
+        { label: '卡片', value: '计数主线 33/33 done（进度条 100%）；全板 38 卡 = 34 done + 4 watch' },
+        { label: '主线态势', value: 'DESIGN ✓ / CRAWL ✓ / BACKEND ✓ / FRONTEND ✓ / SHIP（agent 面 ✓，发布待用户）/ OPS watch' },
+        { label: '门禁', value: 'npm run check 173/173（HEAD ba24eb4；今日零代码变更，无需复跑）' },
+        { label: '日报页', value: '昨夜上线（deploymentId 2121337312370835456）；本条为第 2 篇' },
+      ],
+
+      sections: [
+        {
+          heading: '剩余工作 · 用户亲手（红线：发布不代做）',
+          kind: 'list',
+          items: [
+            'landing 上线：步骤 + 6 项自检单 = 02-变现文档包/10（约 30 分钟）。',
+            '赞助链接两处 href=# 占位替换为真实收款链接（GitHub Sponsors / 爱发电）。',
+            '全渠道发布：PH / V2EX / 即刻 / 小红书 / RYM（文案终稿 = 02 包/08，素材稿 = 02 包/09，渠道矩阵 = 02 包/10）。',
+            'T1–T4 首评收集（连续 4 周口径 = 02 包/11：T1/T2 自愿上报，T2 coverage 每周读 /metrics，T3/T4 待埋点勿伪造）→ W12 决策门判定（判定权在用户，三分支预案在档）。',
+          ],
+        },
+        {
+          heading: '剩余工作 · 待用户裁决（agent 只备案评审案，不自决）',
+          kind: 'list',
+          items: [
+            '未提交在制品提交时机：主线仓四件（AGENTS.md / docs/find-scenario.md / docs/find-scenario-screenshots/ / tests/perf-like.test.ts）+ 遗留仓 W2-2 元数据域落点。',
+            '双仓归属/合并：musicgraphy/（主线）vs Musicgraphy-2.0-代码库/（只读存档）。',
+            'alias_sources 编码归一：主线 = 对象数组 vs 遗留仓 = "source:source_id" 字符串（shared/types.ts 冻结 string[]）。',
+            '7f95537 归属澄清追认：B5 会话文档件（IM-25 段 + 网易云评审案）随 Topster 收口捎带入库，提交说明误标——7f95537 + 427e32a 合读 = 完整回写。',
+            'IM-23 同号两则补正案（§12 网易云评审案登记 与 §12 P1-6 实现决策；IM 只增不改，须全量同步出补正案）。',
+            'colorOf(16)/13「灰」双 chip 消歧（涉种子库生命周期）。',
+          ],
+        },
+        {
+          heading: '剩余工作 · agent 可做（先评审/获批准后执行）',
+          kind: 'list',
+          items: [
+            'installAuth 页面守卫缺口修复（技术债 D1：use(\'/\') 仅拦根路径，/metrics /album/:id /topsters 页面匿名可达——V10 规格 302 vs 401 边界，修复须评审案先行，测试已按现状固化）。',
+            'W8-9 行为埋点立项：echo_ctr / note_revisit_rate / export_usage / search_fail_rate 四仪表现 null（本地匿名可关闭可立项；跨实例聚合上报与隐私红线互斥不可立项）。',
+            'P1-4 色板设计：W6 输入已就绪（蓝轴稀疏定谳 = 真蓝封面多去饱和，色板 8=#2563EB 天然长尾）。',
+            '观察池只认信号不认日期：真虚拟滚动 / 位图导出（案 B）/ R5 跨源轮转 / 密度三档等——信号触发再议，无排期。',
+          ],
+        },
+      ],
+
+      evidence: [
+        { label: '复核口径', value: '以代码与卡片 evidence 为准逐线核对（2026-11-15）；零代码变更日，门禁沿用 173/173（HEAD ba24eb4）' },
+        { label: '看板', value: 'meta.lastSync → 2026-11-15；SHIP subtitle 补「余 = 用户发布 + 决策门」；relations「后端→前端」阻塞点销项（B1 已完成）；00 索引两评审案「待追认」→「已追认执行」' },
+        { label: '事实源', value: '剩余工作明细与全部 hash/路径/数字 = progress-data.js 各卡 evidence + 02-变现文档包/08·09·10·11·12' },
+      ],
+    },
+
     // ================= 2026-11-14 =================
     {
       date: '2026-11-14',

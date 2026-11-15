@@ -18,7 +18,7 @@ export interface IslandModule {
 
 type IslandLoader = () => Promise<IslandModule>;
 
-/** 岛屿注册表（ADR-003 四岛屿 + 第 5 岛屿 wall-scroll + 第 6 岛屿 globe-view + 第 7/8 岛屿 crate-flip/panorama-view；键 = data-island 属性值；保持懒加载勿静态引入）。 */
+/** 岛屿注册表（ADR-003 四岛屿 + 第 5 岛屿 wall-scroll + 第 6 岛屿 globe-view + 第 7/8 岛屿 crate-flip/panorama-view + 第 9/10 岛屿 genre-scan/audio-viz；键 = data-island 属性值；保持懒加载勿静态引入）。 */
 const ISLANDS: Record<string, IslandLoader> = {
   'add-dialog': () => import('./islands/add-dialog.js'),
   'filter-cabin': () => import('./islands/filter-cabin.js'),
@@ -27,7 +27,9 @@ const ISLANDS: Record<string, IslandLoader> = {
   'wall-scroll': () => import('./islands/wall-scroll.js'),
   'globe-view': () => import('./islands/globe-view/globe-view.js'),
   'crate-flip': () => import('./islands/crate-flip.js'),
-  'panorama-view': () => import('./islands/panorama-view.js')
+  'panorama-view': () => import('./islands/panorama-view.js'),
+  'genre-scan': () => import('./islands/genre-scan.js'),
+  'audio-viz': () => import('./islands/audio-viz.js')
 };
 
 async function mountIslands(container: ParentNode = document): Promise<void> {

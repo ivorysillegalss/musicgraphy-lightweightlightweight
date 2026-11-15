@@ -50,6 +50,7 @@ import { crateMoreFragment, renderCrate } from '../pages/crate';
 import { renderPanorama } from '../pages/panorama';
 import type { GenreMap } from '../db/genremap';
 import type { PanoramaData } from '../db/panorama';
+import { resolveAlbumPreview, streamPreview } from '../metadata/preview';
 
 const PAGE_LIMIT = 60; // ADR-005 内存纪律①：列表强制 LIMIT 60
 const ADDABLE_SOURCES = new Set(['musicbrainz', 'deezer', 'itunes', 'discogs', 'user-provided']);
@@ -308,6 +309,34 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     }
     opts.onAlbumAdded?.(albumId, sourceId, coverUrl);
     return c.redirect('/?flash=added', 303); // 303 回网格（ADR-003 V4；I3 单 INSERT 即完成态）
+  });
+
+  // ---------------------------------------------------------------- 预览（S2-15/18/27 音频源 · 评审案 Q12/Q13：解析缓存 + 同源流式代理，显式触发零预取）
+
+  app.get('/album/:id/preview', async (c) => {
+    const id = c.req.param('id');
+    let title: string;
+    let artist: string;
+    try {
+      const detail = dao.getRecord(id);
+      title = detail.album.title;
+      artist = detail.album.artist;
+    } catch {
+      return c.json(errorBody('record_not_found', '记录不存在'), 404);
+    }
+    let url: string | null = null;
+    try {
+      url = await resolveAlbumPreview(chain, id, title, artist);
+    } catch {
+      url = null; // 解析失败 = 诚实无预览（fail-soft，不伪造）
+    }
+    if (url === null) return c.json(errorBody('preview_unavailable', '没有找到这张专辑的可试听预览'), 404);
+    try {
+      const up = await streamPreview(url);
+      return c.body(up.body, 200, { 'Content-Type': up.contentType, 'Cache-Control': 'private, max-age=86400' });
+    } catch {
+      return c.json(errorBody('preview_unavailable', '预览拉流失败——稍后再试'), 502);
+    }
   });
 
   // ---------------------------------------------------------------- 详情（双区：外部元数据 × 个人记录）

@@ -47,7 +47,7 @@ export function renderPanorama(
       </div>
     </noscript>
   </div>
-  <p class="small panorama-hint">方向键平移 · +/− 缩放 · 点击封面进详情 · 视图位置在地址栏，可分享可后退。</p>
+  <p class="small panorama-hint">方向键平移 · +/− 缩放 · 点击封面进详情 · 悬停后按 P 试听 30 秒 · 视图位置在地址栏，可分享可后退。</p>
   </main>`;
   return layout({ ...layoutOpts, body });
 }

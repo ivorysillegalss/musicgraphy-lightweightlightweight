@@ -38,7 +38,7 @@ export function renderGenreMap(
     const current = (n.kind === 'genre' && props.focusGenre === n.name) || (n.kind === 'tag' && props.focusTag === n.name);
     return html`<a role="listitem" class="gnode ${n.kind === 'genre' ? 'gnode-genre' : 'gnode-tag'}${current ? ' gnode-current' : ''}"
       style="left:${String(n.x)}%; top:${String(n.y)}%; font-size:${String(fs)}px;"
-      href="${href}" title="${String(n.count)} 张 · ${n.kind === 'genre' ? '流派' : 'Tag'}——点按筛选">${n.name}</a>`;
+      href="${href}" data-sample="${n.sample ?? ''}" title="${String(n.count)} 张 · ${n.kind === 'genre' ? '流派' : 'Tag'}——点按筛选">${n.name}</a>`;
   });
   const body = html`${header}<main class="page">
   <div class="page-intro">

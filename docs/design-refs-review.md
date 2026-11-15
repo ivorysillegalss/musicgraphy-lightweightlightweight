@@ -163,3 +163,64 @@
   /fragment/atlas-data 200 形状+计数=种子数+匿名 302 / POST /settings/sensory on→Set-Cookie、
   off→清除、无 Origin 403、303 回 to 路径。
 - 门禁 = `npm run check` 全绿（基线 200/200 顺延）；置 done 前置（G4）。
+
+---
+
+# 第二批 · 音频段实现（S2-15/18/19/27 · 2026-11-15 用户令「继续执行第二批」= 执行授权）
+
+> 第一批（S2-12~S2-26 非音频段 12 卡）已收口于 0ab7a4d；本批 = 按卡面约定后置的音频段。
+> 音频源合规评审 = 本节 Q12–Q14（用户令即执行授权，决策全留档；IM-30「评审案照出」落地形态）。
+
+## Q12 · 音频源与解析（S2-15/18/27 共用基座）
+
+- **源 = iTunes Search API `entity=song`**（结果自带 30s `previewUrl`，30s m4a）——album 实体
+  **不含** preview（实测口径），故一次 song 实体调用同时拿到 专辑名/艺术家名/预览地址。
+- **走既有通道零新通道**：`ITunesSource.searchSongPreview()` 复用该源既有的 全局串行队列 +
+  20/min 门 + UA + 超时 + fetchFn 注入（乙-4 上游限流纪律零放宽；不新建第二个限流窗口）。
+  `SourceChain.byName('itunes')` 暴露既有源实例（chain.search 的 album 实体路径零改动）。
+- **零落库副作用**：不走 `chain.search`/`searchAlbums`（那会把候选写入 album_metadata——
+  预览解析不应产生行）。直查源实例，纯读。
+- **匹配护栏（防错碟）**：normalize（trim+lowercase）后 **严格档** = 专辑名且艺术家名全等；
+  **宽松档** = 仅专辑名全等（strict 命中失败时）。两档全 miss → 404 `preview_unavailable`
+  （诚实 fail-soft，不伪造、不放错碟的音频）。
+- **缓存** = 进程内 `Map<recordId, url|null>`（null = 已解析但无预览，防重复打上游）+
+  single-flight（并发同记录合并为一次解析）。**不做 0006 迁移列**——预览 URL 有易变性
+  （Apple 轮换），进程级缓存随重启自然失效重解析 = 更稳健；迁移纪律零触碰。
+- **隐私红线**：解析仅由用户显式点击/按键触发（`<audio preload="none">` = 不点不请求）；
+  无自动播放、无批量预取、无遥测外发。
+
+## Q13 · 拉流与播放形态（S2-15/18）
+
+- **同源代理流式**：`GET /album/:id/preview` → 解析（缓存命中零上游）→ 服务端 fetch 预览
+  URL 并**流式转发**（`c.body(upstream.body)`，12s 超时，串行信号量一次一路——媒体 CDN GET
+  不占元数据 API 窗口，B4 封面门同哲学）。选代理而非 302 直跳的三条理由：
+  ①同源 = S2-19 AnalyserNode 无 CORS 污染（跨源媒体 rAF 取样恒零，物理限制）；
+  ②用户 IP 不暴露给 Apple CDN（比 everynoise 直链更优的隐私姿态）；
+  ③Content-Type/缓存头可控（private, max-age=86400）。
+- **磁盘零落盘**（流式直通，封面管线「流式禁整读」同款；内存纪律②「同一时刻一路」由
+  信号量保证）。
+- **UI 姿态**：详情页 `<audio controls preload="none">`（S2-18 听觉线索 = 「当时」的听觉补充，
+  功能准入 = 更好回顾）；无预览的记录按钮照常在档、播放时诚实 404（前端 `error` 事件静默
+  + 状态行提示，不伪造）。
+- **S2-15 就地试听**：panorama 岛屿 hover 命中节点 + `P` 键 → 同一端点播放（漫游中不离开
+  场景，Album Atlas 原理③）。
+- **S2-27 扫听**：/genres 星图 scan 岛屿——服务端在每个节点内联代表记录（`MIN(record id)`
+  一次 GROUP BY 拿全表样本），islands 逐节点顺序播放 + `.gnode-playing` ♫ 高亮
+  （everynoise scan() 同构；节点点击仍是筛选主语义，扫听是独立按钮显式开启）。
+
+## Q14 · S2-19 视觉反应体（低依赖替代落地）
+
+- **AnalyserNode + Canvas 2D 时域示波器**（07 包 03 号 Radiooooo 拆解 §2.2 已证零依赖可行）：
+  `createMediaElementSource(detail audio) → Analyser(fftSize 512) → destination`，播放中 rAF
+  画 `getByteTimeDomainData` 波形，暂停/结束 cancelAnimationFrame（dirty 按需纪律同族）。
+  依赖 Q13 同源代理（跨源污染规避）——两段互为前提，本批一并落地。
+- 岛屿 `audio-viz`（详情页）+ `genre-scan`（星图）登记 main.ts 注册表（并行会话已随 DR 收口
+  把本批 crate-flip/panorama-view 两行带入提交——main.ts 已释放，注册无障碍）。
+
+## 红线核对（音频批）
+
+乙-4 上游限流 ✓（复用 iTunes 源既有队列+门，零新通道）；乙-5 零 CDN ✓（我方资产零外链，
+音频是用户显式触发的上游媒体流，封面 cover_url 同信任模型）；隐私 ✓（显式触发 + IP 不出
+本机代理 + fail-soft 404）；内存四纪律 ✓（流式直通 + 串行一路 + 无 base64 + 缓存仅存
+URL 字符串）；迁移纪律 ✓（零迁移）；禁 raw ✓（hono/html 转义 + JSON 端点）。
+依赖数：**3 不变**（maplibre 由 DR 批引入，本批零新增——G1 观察指标如实报告）。

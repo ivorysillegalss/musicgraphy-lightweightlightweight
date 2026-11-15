@@ -210,6 +210,27 @@ export function mount(root: HTMLElement): void {
   };
   const pointers = new Map<number, { x: number; y: number }>();
   let moved = 0;
+  let hoverId: string | null = null;
+  let hoverAudio: HTMLAudioElement | null = null;
+  // 命中测试（点击与悬停共用；S2-15 P 键试听也走 hoverId）
+  const hitTest = (mx: number, my: number): PNode | null => {
+    const half = coverSide() / 2;
+    const r = Math.max(10, half);
+    let best: PNode | null = null;
+    let bestD = Infinity;
+    if (data !== null) {
+      for (const n of data.nodes) {
+        const sx = (n.x - view.x) * view.s + vw / 2;
+        const sy = (n.y - view.y) * view.s + vh / 2;
+        const d = (sx - mx) * (sx - mx) + (sy - my) * (sy - my);
+        if (d < bestD) {
+          bestD = d;
+          best = n;
+        }
+      }
+    }
+    return best !== null && bestD <= r * r ? best : null;
+  };
   canvas.addEventListener('pointerdown', (e) => {
     canvas.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -217,7 +238,14 @@ export function mount(root: HTMLElement): void {
   });
   canvas.addEventListener('pointermove', (e) => {
     const prev = pointers.get(e.pointerId);
-    if (prev === undefined) return;
+    if (prev === undefined) {
+      // 悬停（无按键）：记录命中节点供 P 键试听（S2-15），并给指针反馈
+      const rect = canvas.getBoundingClientRect();
+      const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      hoverId = hit?.i ?? null;
+      canvas.style.cursor = hit !== null ? 'pointer' : 'grab';
+      return;
+    }
     const dx = e.clientX - prev.x;
     const dy = e.clientY - prev.y;
     prev.x = e.clientX;
@@ -246,24 +274,8 @@ export function mount(root: HTMLElement): void {
     if (had && pointers.size === 0 && moved < 4) {
       // 点击命中：最近节点（半径 = max(10px, 封面半边)）
       const rect = canvas.getBoundingClientRect();
-      const mx = e.clientX - rect.left;
-      const my = e.clientY - rect.top;
-      const half = coverSide() / 2;
-      const r = Math.max(10, half);
-      let best: PNode | null = null;
-      let bestD = Infinity;
-      if (data !== null) {
-        for (const n of data.nodes) {
-          const sx = (n.x - view.x) * view.s + vw / 2;
-          const sy = (n.y - view.y) * view.s + vh / 2;
-          const d = (sx - mx) * (sx - mx) + (sy - my) * (sy - my);
-          if (d < bestD) {
-            bestD = d;
-            best = n;
-          }
-        }
-      }
-      if (best !== null && bestD <= r * r) location.assign(`/album/${best.i}`);
+      const hit = hitTest(e.clientX - rect.left, e.clientY - rect.top);
+      if (hit !== null) location.assign(`/album/${hit.i}`);
     }
   };
   canvas.addEventListener('pointerup', lift);
@@ -286,7 +298,20 @@ export function mount(root: HTMLElement): void {
     else if (e.key === 'ArrowDown') { e.preventDefault(); target.y += pan; }
     else if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomAt(vw / 2, vh / 2, 1.25); return; }
     else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomAt(vw / 2, vh / 2, 0.8); return; }
-    else return;
+    else if (e.key === 'p' || e.key === 'P') {
+      // S2-15 就地试听：悬停节点 + P 键（漫游中不离开场景，Album Atlas 原理③；显式触发零预取）
+      e.preventDefault();
+      if (hoverId !== null) {
+        if (hoverAudio === null) hoverAudio = new Audio();
+        if (hoverAudio.src.endsWith(`/album/${hoverId}/preview`) && !hoverAudio.paused) {
+          hoverAudio.pause();
+        } else {
+          hoverAudio.src = `/album/${hoverId}/preview`;
+          void hoverAudio.play().catch(() => {}); // 无预览（404）= 诚实静默
+        }
+      }
+      return;
+    } else return;
     if (!smooth) {
       view.x = target.x;
       view.y = target.y;

@@ -172,6 +172,35 @@ export class ITunesSource implements AlbumSource {
       });
     });
   }
+
+  /**
+   * 歌曲实体预览解析（S2-15/18/27 音频源 · 评审案 docs/design-refs-review.md Q12）：
+   * entity=song 结果自带 30s previewUrl（album 实体没有）；复用本源 20/min 门 + 全局串行
+   * 队列 + UA + 超时 + fetchFn 注入——零新限流通道（乙-4）。不属于 AlbumSource 接口
+   * （不进 chain.search 优先级序），仅供 metadata/preview.ts 按名取用。
+   */
+  async searchSongPreview(q: string, limit = 12): Promise<Array<{ collectionName: string; artistName: string; previewUrl: string }>> {
+    try {
+      this.gate.take();
+    } catch (err) {
+      if (err instanceof LocalRateLimitError) {
+        logger.warn('metadata', 'itunes quota window full, skipping preview', { retry_after_ms: err.retryAfterMs });
+        return [];
+      }
+      throw err;
+    }
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=${limit}`;
+    return this.limiter.run(async () => {
+      const body = (await getJson(url, this.userAgent, this.timeoutMs, this.fetchFn)) as {
+        results?: Array<{ collectionName?: unknown; artistName?: unknown; previewUrl?: unknown }>;
+      };
+      return (body.results ?? []).flatMap((r) =>
+        typeof r.previewUrl === 'string' && r.previewUrl !== '' && typeof r.collectionName === 'string' && typeof r.artistName === 'string'
+          ? [{ collectionName: r.collectionName, artistName: r.artistName, previewUrl: r.previewUrl }]
+          : []
+      );
+    });
+  }
 }
 
 /** Discogs（冷门兜底）：database/search 需个人令牌；无令牌 → 源停用（fail-soft 跳过） */
@@ -245,5 +274,10 @@ export class SourceChain {
     const first = errors[0];
     if (first) throw first.err;
     return [];
+  }
+
+  /** 按名取源实例（S2-12+Q12：panorama/preview 域直查 iTunes 源做 song 实体预览解析；chain.search 零改动） */
+  byName(name: MetadataSource): AlbumSource | undefined {
+    return this.sources.find((s) => s.name === name);
   }
 }

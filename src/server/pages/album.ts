@@ -95,6 +95,11 @@ function detailBody(d: CollectionDetail, flash: FlashKind, layoutOpts: Omit<Layo
             <button class="btn btn-secondary fav-btn" type="submit" aria-pressed="${r.is_favorite ? 'true' : 'false'}">${icon('heart', 16, r.is_favorite)} ${r.is_favorite ? '已收藏' : 'Favorite'}</button>
           </form>
         </div>
+        <div class="preview-row" style="margin-top: var(--space-lg);">
+          <audio id="album-preview" controls preload="none" src="/album/${r.id}/preview" style="width:100%; max-width:340px; display:block;"></audio>
+          <div class="small" style="color:var(--color-muted-foreground); margin-top:4px;">试听 · 30 秒预览（点击才向 iTunes 解析拉流；无预览诚实 404 不伪造）</div>
+          <div data-island="audio-viz" data-audio="album-preview"><canvas class="audio-viz-canvas" width="340" height="48" aria-hidden="true"></canvas></div>
+        </div>
         <details class="note-fold form-row" style="margin-top: var(--space-lg); max-width:520px;">
           <summary>${icon('note', 14)} 补线索——Tag / 当时 / 听的时期（先添加、稍后补）</summary>
           <form method="post" action="/album/${r.id}/update" style="padding: 12px 14px; display:grid; gap: var(--space-md);">

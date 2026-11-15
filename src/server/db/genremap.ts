@@ -16,6 +16,8 @@ export interface GenreMapNode {
   /** 归一化坐标 0..100（SSR 直出 left/top 百分比） */
   x: number;
   y: number;
+  /** 代表记录 id（S2-27 扫听取样：MIN(record id) 确定性；无则 null） */
+  sample: string | null;
 }
 
 export interface GenreMap {
@@ -33,10 +35,10 @@ interface LayoutEdge {
 // —— SQL（域内常量，全部参数化零拼接注入面；json_each = W0-3 实测 ~ms 级先例）——
 
 const SQL_GENRE_NODES =
-  'SELECT je.value AS name, COUNT(*) AS count FROM collection_record r JOIN album_metadata m ON m.id = r.album_id, ' +
+  'SELECT je.value AS name, COUNT(*) AS count, MIN(r.id) AS sample FROM collection_record r JOIN album_metadata m ON m.id = r.album_id, ' +
   "json_each(m.genres) je WHERE r.user_id = ? AND je.value IS NOT NULL AND TRIM(je.value) <> '' GROUP BY je.value ORDER BY COUNT(*) DESC, je.value";
 const SQL_TAG_NODES =
-  'SELECT t.name AS name, COUNT(*) AS count FROM record_tag rt JOIN tags t ON t.id = rt.tag_id ' +
+  'SELECT t.name AS name, COUNT(*) AS count, MIN(rt.record_id) AS sample FROM record_tag rt JOIN tags t ON t.id = rt.tag_id ' +
   'WHERE t.user_id = ? GROUP BY rt.tag_id ORDER BY COUNT(*) DESC, t.name';
 const SQL_GENRE_GENRE =
   'SELECT je1.value AS a, je2.value AS b, COUNT(*) AS w FROM collection_record r JOIN album_metadata m ON m.id = r.album_id, ' +
@@ -176,7 +178,8 @@ export function genreMap(st: StmtCache, userId = 'local'): GenreMap {
       const name = asStr(cell(r, 'name'), 'name').trim();
       if (name === '' || index.has(`${kind}:${name}`)) continue;
       index.set(`${kind}:${name}`, nodes.length);
-      nodes.push({ kind, name, count: Number(cell(r, 'count') ?? 0), x: 0, y: 0 });
+      const sample = cell(r, 'sample');
+      nodes.push({ kind, name, count: Number(cell(r, 'count') ?? 0), x: 0, y: 0, sample: sample === null ? null : String(sample) });
     }
   };
   push('genre', genres);

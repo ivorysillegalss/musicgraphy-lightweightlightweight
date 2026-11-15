@@ -386,3 +386,15 @@ body[data-sensory="on"] .spine { transition: transform 0.28s cubic-bezier(0.22, 
 }
 .globe-theme button[aria-pressed="true"] { border-color: var(--globe-accent); color: var(--color-accent-text); }
 .globe-theme button:focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }
+
+/* —— 第二批 · 音频段（S2-15/18/19/27 · 评审案 docs/design-refs-review.md Q12–Q14）—— */
+
+/* S2-18 详情页试听 + S2-19 示波器（同源代理流 → AnalyserNode 无 CORS 污染） */
+.preview-row audio { border-radius: var(--radius-sm); }
+.audio-viz-canvas { display: block; width: 340px; max-width: 100%; height: 48px; margin-top: 6px; border: var(--border-hairline); border-radius: var(--radius-sm); background: var(--color-card); }
+
+/* S2-27 星图扫听（everynoise scan() 同构；♫ 播放标记 = 纯 CSS ::before） */
+.genre-scan-bar { display: flex; align-items: center; gap: var(--space-md); margin-bottom: var(--space-sm); }
+.genre-scan-status { color: var(--color-muted-foreground); }
+.gnode-playing { background: var(--color-card-foreground); color: var(--color-card); font-weight: 700; }
+.gnode-playing::before { content: "\266B "; }

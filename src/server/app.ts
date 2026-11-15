@@ -16,6 +16,7 @@ import { coverRoutes } from './metadata/cover-routes';
 import type { CoverGate } from './metadata/cover-gate';
 import type { Telemetry } from './db/telemetry';
 import { SourceChain, type AlbumSource } from './metadata/sources';
+import { initPreview } from './metadata/preview';
 
 export type AppOptions = RecordsRouteOptions & {
   /** 封面子应用覆盖项（测试零网络 seam：tmp coversDir / fetch 注入；缺省用 config + 全局 fetch） */
@@ -32,6 +33,8 @@ export type AppOptions = RecordsRouteOptions & {
 export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: AppOptions = {}): Hono {
   const app = new Hono();
   const chain = new SourceChain(sources);
+  // 预览域注入（S2-15/18/19/27 · 评审案 docs/design-refs-review.md Q12/Q13：UA 纪律 + 测试 fetchFn seam 复用 cover 注入口）
+  initPreview({ userAgent: cfg.userAgent, fetchFn: opts.cover?.fetchFn });
 
   // 静态资源（复审 V8 拓扑，公开）：/static → vite 产物；/covers → 封面子应用
   // （磁盘命中流式 + immutable；未落盘封面按 album_metadata.cover_url 懒下载，Step 4/F3）

@@ -29,6 +29,7 @@ import { nowIso } from '../db/sql';
 import type { AssociationItem } from '../db/associations';
 import type { CollectionItem, MetricsCoverage } from '../db/types';
 import { errorStrip } from '../html';
+import { errorBody } from '../http';
 import { LocalRateLimitError } from '../metadata/queue';
 import { UpstreamError } from '../metadata/musicbrainz';
 import { searchAlbums, type AlbumSearchItem } from '../metadata/search';
@@ -44,6 +45,11 @@ import { renderTopsterDetail, renderTopsterList, renderTopsterPoster } from '../
 import { buildTopsterSvg } from '../pages/topster-svg';
 import * as topster from '../db/topster';
 import { searchSuggestFragment } from '../pages/suggest';
+import { renderGenreMap } from '../pages/genremap';
+import { crateMoreFragment, renderCrate } from '../pages/crate';
+import { renderPanorama } from '../pages/panorama';
+import type { GenreMap } from '../db/genremap';
+import type { PanoramaData } from '../db/panorama';
 
 const PAGE_LIMIT = 60; // ADR-005 内存纪律①：列表强制 LIMIT 60
 const ADDABLE_SOURCES = new Set(['musicbrainz', 'deezer', 'itunes', 'discogs', 'user-provided']);
@@ -571,6 +577,101 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
       }
     }
     return c.redirect('/topsters', 303);
+  });
+
+  // ---------------------------------------------------------------- 设计参考视图（R-106/R-108/R-109 · S2-12~S2-26，评审案 docs/design-refs-review.md）
+  // 三视图 = Collection 的另一种看法（Topster=View 同款纪律：不建第二套数据）；
+  // 命名注记：/atlas 已被并行会话 DR globe 页占用（routes/atlas.ts 在制品），R-106 图集 = /panorama（评审案 Q1′）。
+
+  // 感官层开关（S2-17 · R-107）：mg_sensory cookie，缺省 = 低动静音（隐私+不打扰）；metrics/toggle 先例同款
+  const SENSORY_COOKIE = 'mg_sensory';
+  const SENSORY_MAX_AGE = 365 * 24 * 3600;
+  const sensoryOn = (c: Context): boolean => getCookie(c, SENSORY_COOKIE) === 'on';
+
+  // R-109 流派星图（S2-24/25/26）：纯 SSR 绝对定位标签（everynoise 机制同款，零岛屿零 canvas）
+  app.get('/genres', (c) => {
+    let map: GenreMap | null = null;
+    try {
+      map = dao.genreMap();
+    } catch {
+      map = null; // 三态：计算失败不伪造（页面 error 条 + 重试）
+    }
+    const p = searchParams(c);
+    const focusGenre = p.get('genre');
+    const focusTag = p.get('tag');
+    return c.html(renderGenreMap({ map, sensoryOn: sensoryOn(c), focusGenre, focusTag }, { title: 'Musicgraphy · 流派星图' }));
+  });
+
+  // R-108 翻箱（S2-20/21/22）：SSR 首箱 60 张（LIMIT 60 纪律）+ crate-flip 岛屿键盘增强 + 续箱 fragment
+  app.get('/crate', (c) => {
+    const p = searchParams(c);
+    let items: ReturnType<DAO['listPage']>['items'] = [];
+    let meta: { has_next: boolean; next_cursor: string | null } = { has_next: false, next_cursor: null };
+    let error: string | null = null;
+    try {
+      const page = dao.listPage({ cursor: p.get('cursor'), limit: PAGE_LIMIT });
+      items = page.items;
+      meta = page.meta;
+    } catch {
+      error = '翻箱取数失败——档案服务没有回应。';
+    }
+    return c.html(renderCrate({ items, hasNext: meta.has_next, nextCursor: meta.next_cursor, sensoryOn: sensoryOn(c), error }, { title: 'Musicgraphy · 翻箱' }));
+  });
+
+  // 续箱片段（wall-scroll 同族：cursor 服务端顺链，data-next 透传；503 = 岛屿注入错误态信号）
+  app.get('/fragment/crate', (c) => {
+    try {
+      const page = dao.listPage({ cursor: searchParams(c).get('cursor'), limit: PAGE_LIMIT });
+      return c.html(crateMoreFragment(page.items, page.meta.next_cursor));
+    } catch {
+      return c.html(crateMoreFragment([], null), 503);
+    }
+  });
+
+  // 随机一张（S2-23）：302 → /album/:id（页面导航语义，无 JS 纯链接可用）；空档案 → 303 回主页
+  app.get('/random', (c) => {
+    try {
+      const id = dao.randomRecordId();
+      if (id !== null) return c.redirect(`/album/${id}`, 302);
+    } catch {
+      /* fallthrough */
+    }
+    return c.redirect('/', 303);
+  });
+
+  // R-106 收藏全景（S2-12/13/14）：Canvas 岛屿宿主页（命名注记见上）
+  app.get('/panorama', (c) => {
+    let nodes: PanoramaData | null = null;
+    let error: string | null = null;
+    try {
+      nodes = dao.panoramaNodes();
+    } catch {
+      error = '全景布局计算失败——档案服务没有回应。';
+    }
+    return c.html(renderPanorama({ hasRecords: (nodes?.stats.records ?? 0) > 0, sensoryOn: sensoryOn(c), error }, { title: 'Musicgraphy · 收藏全景' }));
+  });
+
+  // 全景数据供给（envelope {data} 口径；全表读 = 内存纪律①豁免第二则，export 先例——字节数随 evidence 报告）
+  app.get('/fragment/panorama-data', (c) => {
+    try {
+      return c.json({ data: dao.panoramaNodes() });
+    } catch {
+      return c.json(errorBody('internal_error', '全景数据计算失败'), 500);
+    }
+  });
+
+  // 感官层动作（S2-17）：to 必须 / 开头且非 //（防开放重定向）；off = 清 cookie 回缺省安静态
+  app.post('/settings/sensory', async (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site request rejected', 403);
+    const b = await c.req.parseBody().catch(() => ({}) as Record<string, unknown>);
+    const rawTo = typeof b['to'] === 'string' ? b['to'] : '/';
+    const to = rawTo.startsWith('/') && !rawTo.startsWith('//') ? rawTo : '/';
+    if (b['action'] === 'on') {
+      setCookie(c, SENSORY_COOKIE, 'on', { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: SENSORY_MAX_AGE });
+    } else {
+      deleteCookie(c, SENSORY_COOKIE, { path: '/' });
+    }
+    return c.redirect(to, 303);
   });
 
   // ---------------------------------------------------------------- 观察池仪表页（W8：PRD §6 · 04B §3 自托管匿名计数、可关闭）

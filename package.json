@@ -22,7 +22,8 @@
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",
-    "hono": "^4.13.17"
+    "hono": "^4.13.17",
+    "maplibre-gl": "^6.18.0"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

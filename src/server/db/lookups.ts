@@ -34,3 +34,9 @@ export function albumIdsInCollection(st: StmtCache, albumIds: string[]): Set<str
   }
   return found;
 }
+
+/** 随机一张（R-108 · S2-20，评审案 docs/design-refs-review.md Q5）：本地 ORDER BY RANDOM() 规模内毫秒级，零上游零限流 */
+export function randomRecordId(st: StmtCache, userId = 'local'): string | null {
+  const row = st.get('SELECT id FROM collection_record WHERE user_id = ? ORDER BY RANDOM() LIMIT 1').get(userId) as Row | undefined;
+  return row ? asStr(cell(row, 'id'), 'id') : null;
+}

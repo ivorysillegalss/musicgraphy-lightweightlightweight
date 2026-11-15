@@ -24,7 +24,9 @@ import {
   type Stats
 } from './types';
 import * as assoc from './associations';
+import * as genremap from './genremap';
 import * as metrics from './metrics';
+import * as panorama from './panorama';
 import * as taggov from './taggov';
 import * as writes from './writes';
 import * as topster from './topster';
@@ -128,6 +130,11 @@ export class DAO {
   existingSourceIds = (source: string, sourceIds: string[]): Set<string> => lookups.existingSourceIds(this.st, source, sourceIds);
   getAlbum = (albumId: string): AlbumRow | null => lookups.getAlbum(this.st, albumId);
   albumIdsInCollection = (albumIds: string[]): Set<string> => lookups.albumIdsInCollection(this.st, albumIds);
+  randomRecordId = (userId = 'local'): string | null => lookups.randomRecordId(this.st, userId);
+
+  // —— 设计参考视图域（R-106/R-109 · S2-12/S2-24，评审案 docs/design-refs-review.md；域文件委托先例）——
+  genreMap = (userId = 'local'): genremap.GenreMap => genremap.genreMap(this.st, userId);
+  panoramaNodes = (userId = 'local'): panorama.PanoramaData => panorama.panoramaNodes(this.st, userId);
 
   /** 全量导出投影（P1-3 §5.4 原形，永久免费）：tags 一次取回按 record_id 归组；全表读 = 内存纪律①唯一豁免 */
   exportAll(userId = 'local'): ExportPayload {

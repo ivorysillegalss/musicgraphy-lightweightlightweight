@@ -286,3 +286,84 @@ main { max-width: 1240px; margin: 0 auto; padding: var(--space-2xl) var(--space-
   border-radius: var(--radius-md); padding: var(--space-md) var(--space-lg);
 }
 .dup-banner form { display: inline-flex; }
+
+/* ============================================================
+   globe-view 岛屿（DR-M2/M3 · /atlas · 派工 D3 2026-11-15）——追加段
+   （既有样式零改动；这是文件末尾新增的唯一 globe-view 专属组件样式区）。
+   地图 paint 取色唯一来源 = 下方 --globe-* token 桥：值全部引用 tokens.css
+   既有 primitive/semantic 变量（零新增 hex），MASTER token 单一事实源不破；
+   maplibre-style.ts 经 getComputedStyle 运行时读取（禁 TS 硬编码色值）。
+   ============================================================ */
+html {
+  --globe-ocean: var(--color-background);    /* 海洋/背景：奶油纸面（light 默认） */
+  --globe-land: var(--color-border);         /* 基态陆面弱填充 */
+  --globe-boundary: var(--color-secondary);  /* 国界线：钢墨 */
+  --globe-accent: var(--color-accent);       /* playing/selected/hover 强调：琥珀 */
+}
+html[data-theme="dark"] {
+  --globe-ocean: var(--stone-900);           /* 暗色 = 既有 primitive 的暗面映射（非新色值） */
+  --globe-land: var(--stone-800);
+  --globe-boundary: var(--stone-600);
+  --globe-accent: var(--amber-600);
+}
+.atlas-page { max-width: 1080px; margin: 0 auto; padding: 0 var(--space-lg); }
+.globe-view {
+  position: relative;                        /* maplibre 容器约定 */
+  height: clamp(420px, 68vh, 720px);
+  margin-top: var(--space-lg);
+  border: var(--border-hairline);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--globe-ocean);            /* 引擎未就绪/无 JS 时的底色占位（与海洋 token 同源） */
+}
+.globe-view canvas { outline: none; }
+/* DOM 标注（labels.ts 决策注释：symbol 层规避方案，hover/选中 Marker 容器） */
+.globe-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1;
+  background: var(--color-card);
+  color: var(--color-card-foreground);
+  border: var(--border-hairline);
+  border-radius: var(--radius-sm);
+  padding: 5px 9px;
+  box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  pointer-events: none;                      /* 标注不拦截地图拾取（hover 穿透到国家面） */
+}
+.globe-label.is-selected { border-color: var(--globe-accent); color: var(--color-accent-text); }
+.atlas-attribution { color: var(--color-muted-foreground); margin-top: var(--space-md); }
+
+/* —— 设计参考视图（R-106/R-108/R-109 · S2-16~S2-26；评审案 docs/design-refs-review.md）—— */
+
+.page-intro { margin-bottom: var(--space-lg); }
+.page-intro h1 { font-family: var(--font-display); font-size: 28px; margin: 0 0 6px; }
+
+/* R-109 流派星图：SSR 绝对定位标签（everynoise 机制同款；S2-25——零 canvas 零岛屿） */
+.gmap { position: relative; width: 100%; height: 560px; border: var(--border-hairline); border-radius: var(--radius-md); background: var(--color-card); overflow: hidden; }
+.gnode { position: absolute; white-space: nowrap; text-decoration: none; color: var(--color-foreground); opacity: 0.82; padding: 2px 4px; border-radius: var(--radius-sm); }
+.gnode:hover { opacity: 1; background: var(--color-card-foreground); color: var(--color-card); }
+.gnode-tag { color: var(--color-accent-text); }
+.gnode-current { background: var(--color-card-foreground); color: var(--color-card); font-weight: 700; }
+
+/* R-108 翻箱：CSS 3D 侧脊（cratedigger 状态机 CSS 翻译；S2-21/22——rest 半压微倾 / focused 正立居中） */
+.crate-strip { display: flex; align-items: center; gap: 3px; height: 260px; overflow-x: auto; overflow-y: hidden; padding: var(--space-md); border: var(--border-hairline); border-radius: var(--radius-md); background: color-mix(in srgb, var(--swatch-brown) 14%, var(--color-card)); perspective: 900px; }
+.crate-strip:focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }
+.spine { position: relative; flex: 0 0 auto; width: 30px; height: 200px; border-radius: 2px; overflow: hidden; transform: rotateY(14deg) translateY(3px); box-shadow: var(--shadow-sm); display: block; }
+.spine-img { width: 100%; height: 100%; object-fit: cover; }
+.spine-fallback { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.spine-vtext { writing-mode: vertical-rl; font-size: 10px; color: #fff; opacity: 0.9; max-height: 96%; overflow: hidden; }
+.spine-label { position: absolute; left: 0; right: 0; bottom: 0; display: none; font-size: 11px; padding: 2px 4px; background: color-mix(in srgb, var(--color-card) 88%, transparent); color: var(--color-foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spine.current { transform: rotateY(0deg) translateY(-6px) scale(1.12); z-index: 2; box-shadow: var(--shadow-md); }
+.spine.current .spine-label, .spine:hover .spine-label { display: block; }
+body[data-sensory="on"] .spine { transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+
+/* S2-17 感官层开关（metrics/toggle 先例同款姿态） */
+.sensory-toggle { display: inline; }
+
+/* R-106 收藏全景：Canvas 宿主（S2-13/14——LOD 主色方块→封面缩略图，零新依赖） */
+.panorama-stage { position: relative; height: 560px; border: var(--border-hairline); border-radius: var(--radius-md); overflow: hidden; touch-action: none; }
+.panorama-stage:focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }
+.panorama-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.panorama-noscript { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-sm); padding: var(--space-lg); text-align: center; }
+.panorama-hint { margin-top: var(--space-sm); }

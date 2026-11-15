@@ -142,6 +142,35 @@ describe('B5 网易云导入器（IM-23）', () => {
   });
 
   // ---------------------------------------------------------------- 两导入源
+  test('mapAlbumItem 真网关真实形状（2026-11-15 shape dump 实测）：artists 数组取名 + subTime 收藏时间 + 无 publishTime 诚实 null', () => {
+    // /album/sublist 实测条目键 = subTime/msg/artists/picId/picUrl/alias/name/id/size/transNames
+    // ——无 artist 对象、无 artistName 字符串、无 publishTime（发行年份靠 MB 权威化补）
+    const raw = {
+      id: 3120110,
+      name: 'Barter 6',
+      picUrl: 'https://p3.music.126.net/x.jpg',
+      subTime: Date.UTC(2026, 0, 9),
+      artists: [{ id: 1, name: 'Young Thug', img1v1Url: 'https://p4.music.126.net/a.jpg' }],
+      msg: [],
+      alias: [],
+      size: 13,
+      transNames: []
+    };
+    const it = mapAlbumItem(raw);
+    assert.ok(it);
+    assert.equal(it.sourceId, '3120110');
+    assert.equal(it.title, 'Barter 6');
+    assert.equal(it.artist, 'Young Thug');
+    assert.equal(it.savedAt, '2026-01-09T00:00:00Z');
+    assert.equal(it.releaseYear, null);
+    const it2 = mapAlbumItem({ id: 2, name: 'X', artists: [{ name: 'A' }, { name: 'B' }] });
+    assert.ok(it2);
+    assert.equal(it2.artist, 'A / B'); // 多艺术家斜杠并列
+    const it3 = mapAlbumItem({ id: 3, name: 'Y' });
+    assert.ok(it3);
+    assert.equal(it3.artist, 'Unknown Artist'); // 全缺 = 诚实降级
+  });
+
   test('带登录态调用必须携带 Cookie 头（2026-11-15 真网关连通性实测回归：cookie 此前在 callApi 未附加 → /album/sublist 恒 301）', async () => {
     const seen: { url: string; cookie: string | null }[] = [];
     const fetchFn = (async (input: unknown, init?: RequestInit) => {

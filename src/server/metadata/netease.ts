@@ -207,16 +207,25 @@ export function mapAlbumItem(raw: unknown): NeteaseAlbumItem | null {
   const r = raw as Record<string, unknown>;
   const sourceId = typeof r['id'] === 'number' ? String(r['id']) : typeof r['id'] === 'string' ? r['id'] : '';
   if (sourceId === '') return null;
-  const artistName = (r['artist'] as { name?: unknown } | null | undefined)?.name;
+  // 艺术家解析链（2026-11-15 真网关 shape dump 实测）：完整专辑对象 = artist.name（嵌套）；
+  // /album/sublist 真实形状 = artists 数组（[{name:...}]，无 artist 对象、无 artistName 字符串）。
+  const nestedArtist = (r['artist'] as { name?: unknown } | null | undefined)?.name;
   const pasted = typeof r['artistName'] === 'string' ? r['artistName'].trim() : '';
-  const artist = typeof artistName === 'string' && artistName.trim() !== '' ? artistName.trim() : pasted !== '' ? pasted : 'Unknown Artist';
+  const artistsList = Array.isArray(r['artists'])
+    ? (r['artists'] as Record<string, unknown>[])
+        .map((a) => (typeof a?.['name'] === 'string' ? a['name'].trim() : ''))
+        .filter((n) => n !== '')
+    : [];
+  const nested = typeof nestedArtist === 'string' && nestedArtist.trim() !== '' ? nestedArtist.trim() : '';
+  const artist = nested !== '' ? nested : pasted !== '' ? pasted : artistsList.length > 0 ? artistsList.join(' / ') : 'Unknown Artist';
   return {
     sourceId,
     title: typeof r['name'] === 'string' && r['name'].trim() !== '' ? r['name'].trim() : '(未命名专辑)',
     artist,
     coverUrl: typeof r['picUrl'] === 'string' && r['picUrl'] !== '' ? r['picUrl'] : null,
     releaseYear: yearOfMs(r['publishTime']),
-    savedAt: dayOfMs(r['savedAt'])
+    // 收藏时间：savedAt（部分形状）/ subTime（/album/sublist 真实字段名，epoch ms）双兼容
+    savedAt: dayOfMs(r['savedAt'] ?? r['subTime'])
   };
 }
 

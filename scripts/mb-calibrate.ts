@@ -54,11 +54,27 @@ export interface CalibrateSummary {
   /** missed 清单前 20 条（artist - title，便于人工到 MB 手查） */
   missedKeys: string[];
   dryRun: boolean;
+  genresFilled: number;
 }
 
 /** MB resolve 客户端最小面（测试可注入桩；MusicBrainzClient 天然满足） */
 export interface ResolveClient {
   resolveReleaseByArtistAndTitle(artist: string, title: string): Promise<AlbumCandidate | null>;
+  lookupReleaseGenres(mbid: string): Promise<string[]>;
+}
+
+/** MB genres 归一（R-110）：查重既有 chips（casefold 命中沿用既有写法防碎片）→ 未命中首字母大写 → 去重 + cap */
+export function normalizeGenres(raw: string[], existing: Map<string, string>, cap = 6): string[] {
+  const out: string[] = [];
+  for (const g of raw) {
+    const t = g.trim();
+    if (t === '') continue;
+    const key = t.toLowerCase();
+    if (out.some((x) => x.toLowerCase() === key)) continue;
+    out.push(existing.get(key) ?? t.charAt(0).toUpperCase() + t.slice(1));
+    if (out.length >= cap) break;
+  }
+  return out;
 }
 
 /** 枚举 source='netease' 行（直接只读 SQL，DAO 零新增方法；color-extract.ts 直接 prepare 先例） */
@@ -88,10 +104,13 @@ export async function calibrateRows(
     limit?: number | null;
     /** 既有 onAlbumAdded 钩子形态（B5 同款）：封面缺档回填；dry-run 不触发 */
     onAlbumAdded?: (albumId: string, coverUrl: string | null) => void;
+    /** 既有 genre chips 词汇（lower → canonical）：MB genres 归一查重沿用，防 chip 碎片 */
+    existingGenres?: Map<string, string>;
   } = {}
 ): Promise<CalibrateSummary> {
   const dryRun = opts.dryRun === true;
-  const summary: CalibrateSummary = { checked: 0, calibrated: 0, missed: 0, failed: 0, failures: [], missedKeys: [], dryRun };
+  const existingGenres = opts.existingGenres ?? new Map<string, string>();
+  const summary: CalibrateSummary = { checked: 0, calibrated: 0, missed: 0, failed: 0, genresFilled: 0, failures: [], missedKeys: [], dryRun };
   let attempts = 0;
   const maxAttempts = opts.limit ?? Number.POSITIVE_INFINITY;
   const pushFailure = (msg: string): void => {
@@ -130,6 +149,16 @@ export async function calibrateRows(
       continue;
     }
     try {
+      // genres 只补空（行现值优先，IM-12 保守更新语义）：MB lookup inc=genres（失败不阻塞 year/country 合并）
+      let genresValue: string[] | undefined;
+      if (row.genres.length === 0) {
+        try {
+          const normalized = normalizeGenres(await client.lookupReleaseGenres(cand.source_id), existingGenres);
+          if (normalized.length > 0) genresValue = normalized;
+        } catch {
+          // genre lookup 失败 → 本轮跳过 genres，year/country 照常合并（次轮重试）
+        }
+      }
       const { id } = dao.upsertAlbum({
         source: 'musicbrainz',
         source_id: cand.source_id,
@@ -137,7 +166,8 @@ export async function calibrateRows(
         artist: row.artist,
         release_year: cand.release_year,
         cover_url: row.cover_url ?? cand.cover_url, // 封面不降级：netease 现值优先，缺档填 CAA
-        country: cand.country
+        country: cand.country,
+        genres: genresValue
       });
       if (id !== row.id) {
         summary.failed++;
@@ -145,6 +175,7 @@ export async function calibrateRows(
         continue;
       }
       summary.calibrated++;
+      if (genresValue !== undefined) summary.genresFilled++;
       if (row.cover_local === null) {
         const coverUrl = row.cover_url ?? cand.cover_url;
         if (coverUrl !== null) opts.onAlbumAdded?.(row.id, coverUrl); // 封面缺档回填（既有钩子形态）
@@ -222,13 +253,28 @@ async function main(): Promise<void> {
     console.log(
       `[mb-calibrate] netease 行 ${rows.length} 张（${dryRun ? 'dry-run 零写入' : '正式'}${limit !== null ? `，--limit ${limit}` : ''}）`
     );
-    const summary = await calibrateRows(dao, rows, client, { dryRun, limit, onAlbumAdded });
+    // 既有 genre chips 词汇（lower → canonical 首现写法）：MB genres 归一查重沿用，防 rock/Rock 碎片
+    const existingGenres = new Map<string, string>();
+    for (const r of db.prepare('SELECT genres FROM album_metadata WHERE genres IS NOT NULL').all() as Array<{ genres: string }>) {
+      try {
+        const list = JSON.parse(r.genres) as unknown;
+        if (!Array.isArray(list)) continue;
+        for (const g of list) {
+          if (typeof g !== 'string') continue;
+          const t = g.trim();
+          if (t !== '' && !existingGenres.has(t.toLowerCase())) existingGenres.set(t.toLowerCase(), t);
+        }
+      } catch {
+        // 坏 JSON 行跳过（不影响词汇）
+      }
+    }
+    const summary = await calibrateRows(dao, rows, client, { dryRun, limit, onAlbumAdded, existingGenres });
     await Promise.allSettled(pending); // 封面异步钩子收尾（CLI 退出前不丢下载）
 
     if (summary.dryRun) {
       console.log(`[dry-run] 检视 ${summary.checked} 张：将权威化 ${summary.calibrated} / 未命中 ${summary.missed} / 失败 ${summary.failed}，零写入`);
     } else {
-      console.log(`[summary] checked=${summary.checked} calibrated=${summary.calibrated} missed=${summary.missed} failed=${summary.failed}`);
+      console.log(`[summary] checked=${summary.checked} calibrated=${summary.calibrated} missed=${summary.missed} failed=${summary.failed} genresFilled=${summary.genresFilled}`);
     }
     for (const k of summary.missedKeys) console.log(`  [missed] ${k}（MB 未命中，netease 行保留）`);
     for (const f of summary.failures) console.error(`  [failed] ${f}`);

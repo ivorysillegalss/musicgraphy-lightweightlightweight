@@ -41,6 +41,14 @@ interface MbReleaseSearch {
   count?: number;
   releases?: MbRelease[];
 }
+interface MbGenre {
+  name?: string;
+  count?: number;
+}
+interface MbGenreSource {
+  genres?: MbGenre[];
+  'release-group'?: { id?: string };
+}
 
 export class MusicBrainzClient {
   constructor(
@@ -50,9 +58,8 @@ export class MusicBrainzClient {
     private timeoutMs = 10_000
   ) {}
 
-  /** 搜索 release（自由文本透传；粘贴识别/查询增强属 FR-1 捷径层，W2） */
-  async searchReleases(q: string, limit = 12): Promise<AlbumCandidate[]> {
-    const url = `https://musicbrainz.org/ws/2/release?query=${encodeURIComponent(q)}&fmt=json&limit=${limit}`;
+  /** 限流内 JSON GET（ws/2 通用：503 透传 Retry-After；错误归一 UpstreamError） */
+  private async fetchJson<T>(url: string): Promise<T | null> {
     return this.limiter.run(async () => {
       let res: Response;
       try {
@@ -68,9 +75,36 @@ export class MusicBrainzClient {
         throw new UpstreamError(503, 'upstream_rate_limited', 'MusicBrainz 拒绝（超速）', ra);
       }
       if (!res.ok) throw new UpstreamError(res.status, 'upstream_error', `MusicBrainz HTTP ${res.status}`);
-      const body = (await res.json().catch(() => null)) as MbReleaseSearch | null;
-      return (body?.releases ?? []).map(mapRelease);
+      return (await res.json().catch(() => null)) as T | null;
     });
+  }
+
+  /** 搜索 release（自由文本透传；粘贴识别/查询增强属 FR-1 捷径层，W2） */
+  async searchReleases(q: string, limit = 12): Promise<AlbumCandidate[]> {
+    const url = `https://musicbrainz.org/ws/2/release?query=${encodeURIComponent(q)}&fmt=json&limit=${limit}`;
+    const body = await this.fetchJson<MbReleaseSearch>(url);
+    return (body?.releases ?? []).map(mapRelease);
+  }
+
+  /** release lookup genres（R-110 netease 元数据补全 · 2026-11-15）：inc=genres 取 release 级；
+   *  空则追 release-group 级一发（同 MBID 路径零新增搜索；每张 ≈ +1~2 次调用 @ 既有 30/min 限流） */
+  async lookupReleaseGenres(mbid: string): Promise<string[]> {
+    const names = (gs?: MbGenre[]): string[] =>
+      (gs ?? [])
+        .filter((g) => typeof g.name === 'string' && (g.name as string).trim() !== '')
+        .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))
+        .map((g) => (g.name as string).trim());
+    const rel = await this.fetchJson<MbRelease & MbGenreSource>(
+      `https://musicbrainz.org/ws/2/release/${encodeURIComponent(mbid)}?inc=genres&fmt=json`
+    );
+    const fromRelease = names(rel?.genres);
+    if (fromRelease.length > 0) return fromRelease;
+    const rgId = rel?.['release-group']?.id;
+    if (typeof rgId !== 'string' || rgId === '') return [];
+    const rg = await this.fetchJson<MbGenreSource>(
+      `https://musicbrainz.org/ws/2/release-group/${encodeURIComponent(rgId)}?inc=genres&fmt=json`
+    );
+    return names(rg?.genres);
   }
 
   /** 按 artist+title 精确解析（B7 按需权威化）：引号剥除防查询语法注入；top-1 = MB 相关度最高命中 */

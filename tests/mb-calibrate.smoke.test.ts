@@ -16,18 +16,27 @@ import { MusicBrainzClient, UpstreamError, type AlbumCandidate } from '../src/se
 import { MetadataRateLimiter } from '../src/server/metadata/queue';
 import { calibrateRows, getNeteaseRow, listNeteaseRows, type CalibrateSummary, type ResolveClient } from '../scripts/mb-calibrate';
 
-/** 零网络 client 桩：按 (artist,title) 返回预置候选，记录调用 */
-function stubClient(script: Array<AlbumCandidate | null | Error>): { client: ResolveClient; calls: Array<[string, string]> } {
+/** 零网络 client 桩：按 (artist,title) 返回预置候选，记录调用；lookupGenres 缺省返回空（无填充） */
+function stubClient(
+  script: Array<AlbumCandidate | null | Error>,
+  lookupGenres?: (mbid: string) => Promise<string[]>
+): { client: ResolveClient; calls: Array<[string, string]>; lookups: string[] } {
   const calls: Array<[string, string]> = [];
+  const lookups: string[] = [];
   let i = 0;
   return {
     calls,
+    lookups,
     client: {
       async resolveReleaseByArtistAndTitle(artist: string, title: string) {
         calls.push([artist, title]);
         const step = script[Math.min(i++, script.length - 1)] ?? null;
         if (step instanceof Error) throw step;
         return step;
+      },
+      async lookupReleaseGenres(mbid: string) {
+        lookups.push(mbid);
+        return lookupGenres ? lookupGenres(mbid) : [];
       }
     }
   };
@@ -71,14 +80,21 @@ function tempDb(tag: string): Fixture {
 
 let seedSeq = 0;
 /** 种 netease 行（distinct title/artist 防 identity 互并；created_at 递增 → 枚举序确定）+ record + tag */
-function seedNetease(db: Db, dao: DAO, title: string, artist = '周杰伦', over: Partial<{ sourceId: string; year: number | null; coverUrl: string | null }> = {}): string {
+function seedNetease(
+  db: Db,
+  dao: DAO,
+  title: string,
+  artist = '周杰伦',
+  over: Partial<{ sourceId: string; year: number | null; coverUrl: string | null; genres: string[] }> = {}
+): string {
   const { id } = dao.upsertAlbum({
     source: 'netease',
     source_id: over.sourceId ?? `ne-${title}`,
     title,
     artist,
     release_year: over.year ?? null,
-    cover_url: over.coverUrl === undefined ? 'http://ne/cover.jpg' : over.coverUrl
+    cover_url: over.coverUrl === undefined ? 'http://ne/cover.jpg' : over.coverUrl,
+    genres: over.genres
   });
   const seq = ++seedSeq;
   db.prepare('UPDATE album_metadata SET created_at = ? WHERE id = ?').run(`2026-01-01T00:00:0${seq % 10}.000Z`, id);
@@ -187,8 +203,8 @@ describe('B7 MB 按需权威化（IM-23 Q1 路线 B 后置半截）', () => {
   test('限流纪律：两次 resolve 相邻间隔 ≥1s（真 limiter + nowFn/sleepFn 注入）', async () => {
     const f = tempDb('limit');
     try {
-      seedNetease(f.db, f.dao, '专辑甲');
-      seedNetease(f.db, f.dao, '专辑乙');
+      seedNetease(f.db, f.dao, '专辑甲', '周杰伦', { genres: ['Pop'] }); // 预填 genres → lookup 跳过（mbCalls 纯 resolve）
+      seedNetease(f.db, f.dao, '专辑乙', '周杰伦', { genres: ['Rock'] });
       let t = 1_000_000;
       const sleeps: number[] = [];
       const nowFn = (): number => t;
@@ -241,6 +257,44 @@ describe('B7 MB 按需权威化（IM-23 Q1 路线 B 后置半截）', () => {
       assert.deepEqual(hooked, [[idA, 'https://coverartarchive.org/release/mbid-a/front-250']], '仅缺档行触发钩子');
       assert.equal(albumOf(f.db, idA).cover_url, 'https://coverartarchive.org/release/mbid-a/front-250', '缺档填 CAA');
       assert.equal(albumOf(f.db, idB).cover_url, 'http://ne/cover.jpg', '有档行封面不动');
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  test('genres 补全（R-110）：lookup → 归一查重沿用既有写法 + 首字母大写 + cap6，只补空行', async () => {
+    const f = tempDb('genres');
+    try {
+      const id = seedNetease(f.db, f.dao, '范特西'); // genres 空 → 待 MB 填充
+      const existing = new Map([['rock', 'Rock']]); // 既有 chip 写法沿用（防 rock/Rock 碎片）
+      const { client, lookups } = stubClient([HIT()], async () => ['rock', 'Jazz', 'Mandopop', 'hip hop', 'folk rock', 'r&b', 'soul']);
+      const s = await calibrateRows(f.dao, listNeteaseRows(f.db), client, { existingGenres: existing });
+      assert.equal(s.genresFilled, 1);
+      assert.deepEqual(lookups, ['mbid-1'], 'lookup 走 resolve 拿到的同一 MBID');
+      const a = albumOf(f.db, id);
+      assert.deepEqual(a.genres, ['Rock', 'Jazz', 'Mandopop', 'Hip hop', 'Folk rock', 'R&b'], '查重沿用 + 首字母大写 + cap6');
+      assert.equal(a.release_year, 2001, 'year 与 genres 同轮合并');
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  test('genres lookup 失败不阻塞：year/country 照常合并，genres 保留空（次轮重试）', async () => {
+    const f = tempDb('genre-fail');
+    try {
+      const id = seedNetease(f.db, f.dao, '范特西');
+      const err = new UpstreamError(503, 'upstream_rate_limited', 'MusicBrainz 拒绝（超速）', 30);
+      const { client } = stubClient([HIT()], async () => {
+        throw err;
+      });
+      const s = await calibrateRows(f.dao, listNeteaseRows(f.db), client);
+      assert.equal(s.failed, 0, 'genre 失败不算整行失败');
+      assert.equal(s.genresFilled, 0);
+      const a = albumOf(f.db, id);
+      assert.equal(a.release_year, 2001, 'year 照常合并');
+      assert.equal(a.country, 'TW');
+      assert.deepEqual(a.genres, [], 'genres 保留空（诚实缺档，次轮重试）');
+      assert.deepEqual(a.alias_sources, [{ source: 'musicbrainz', source_id: 'mbid-1' }], 'MBID 关联照常');
     } finally {
       f.cleanup();
     }

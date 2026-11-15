@@ -11,6 +11,7 @@ import { exportRoutes } from './routes/export';
 import { metricsRoutes } from './routes/metrics';
 import { savedViewRoutes } from './routes/views';
 import { pagesRoutes } from './routes/pages';
+import { atlasRoutes } from './routes/atlas';
 import { coverRoutes } from './metadata/cover-routes';
 import type { CoverGate } from './metadata/cover-gate';
 import type { Telemetry } from './db/telemetry';
@@ -34,6 +35,9 @@ export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: A
 
   // 静态资源（复审 V8 拓扑，公开）：/static → vite 产物；/covers → 封面子应用
   // （磁盘命中流式 + immutable；未落盘封面按 album_metadata.cover_url 懒下载，Step 4/F3）
+  // DR-M2/M3（派工 D3，2026-11-15）：/static/geo → public/geo 直服（dev 模式零构建可达）；
+  // build 模式 dist/static/geo 同名同内容（publicDir 拷贝），双路命中内容一致；零新依赖。
+  app.use('/static/geo/*', serveStatic({ root: './public', rewriteRequestPath: (p) => p.replace(/^\/static/, '') }));
   app.use('/static/*', serveStatic({ root: './dist' }));
   app.route(
     '/covers',
@@ -56,6 +60,9 @@ export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: A
   // 呈现层（ADR-003）：SSR 页面子应用——Collection / 详情双区 / 添加基线 / 片段端点。
   // 旧 W1 垂直切片首页（renderHome + POST /add）由本子应用整体取代（模板见 pages/*.ts）。
   app.route('/', pagesRoutes(dao, chain, opts));
+  // /atlas 宿主页（DR-M2/M3 · 派工 D3，评审案 5db47b4 §6 追认项 3；R-106 机制底稿）——
+  // 独立域文件 + 一行挂载（routes 所有权纪律：pages.ts 零触碰）；页面守卫随 V10 use('/*') 拓扑。
+  app.route('/atlas', atlasRoutes());
 
   // IM-11：守护探测保持公开（仅非敏感运行指标）
   app.get('/api/v1/health', (c) =>

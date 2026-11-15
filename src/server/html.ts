@@ -118,6 +118,9 @@ ${js === null ? '' : html`<script type="module" src="${js}"></script>`}
 /**
  * 数据主权入口（永久免费红线）+ 观察池仪表入口（04B §3：自托管匿名计数、可关闭）
  * + 设计参考三视图入口（R-106/R-108/R-109 · S2-16 文案层：第一人称档案馆口吻——「再逛逛你的箱子」）
+ * + Topster 入口行（R-101 · S2-1：说明页 + 策展列表双链接——闭环「四页 0 处入口」普查缺口）
+ * + 登录态行（R-102 · S2-29：「已解锁」+ 退出 POST /logout。诚实性：V10 use('/*') 守卫保证
+ *   经 layout() 渲染的页面必然已登录——登录页不走 layout，匿名看到「已解锁」的假态不存在）
  * + 赞助插座（W11 批，W10-12-1；04B §4 常设插座：一行字姿态——零打扰、无弹窗、无进度条、无目标金额公示）。
  * ⚠️ 链接 href="#" 为占位：上线前由用户替换为 GitHub Sponsors / 爱发电真实链接（发布物料包登记项，
  * agent 备料不代发——用户 2026-11-14 裁决「landing 上线与全渠道发布 = 用户亲手」同款纪律）。
@@ -130,6 +133,11 @@ export function siteFooter(): HtmlEscapedString {
   <a class="btn-text" href="/api/v1/export?with_covers=1">含封面 zip</a>
   <span class="small" style="margin-left:auto;"><a class="btn-text" href="/metrics">观察池仪表</a></span>
   <span class="small" style="flex-basis:100%;">再逛逛你自己的箱子：<a class="btn-text" href="/crate">翻箱</a> · <a class="btn-text" href="/genres">流派星图</a> · <a class="btn-text" href="/panorama">收藏全景</a></span>
+  <span class="small" style="flex-basis:100%;">把品味排成一张图：<a class="btn-text" href="/topsters/about">Topster 是什么</a> · <a class="btn-text" href="/topsters">我的策展</a></span>
+  <span class="small" style="flex-basis:100%;">已解锁 · Musicgraphy</span>
+  <form method="post" action="/logout" style="display:inline-flex; align-items:baseline;">
+    <button class="btn-text" type="submit" title="清掉本机会话 cookie 并回到登录页">退出登录</button>
+  </form>
   <span class="small" style="flex-basis:100%;">Musicgraphy 永远免费。如果它帮到了你，<a class="btn-text" href="#" title="上线前由站长配置 GitHub Sponsors / 爱发电链接">请我喝杯咖啡</a>。</span>
 </footer>`;
 }

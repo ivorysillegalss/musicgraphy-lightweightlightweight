@@ -97,4 +97,37 @@ describe('鉴权（V10）', () => {
     });
     assert.equal(same.status, 201);
   });
+
+  test('R-102 页脚登录态区：已解锁 + 退出 form 在档（V10 守卫保证 layout 页必然已登录）', async () => {
+    const home = await app.request('/', { headers: { Cookie: cookie } });
+    assert.equal(home.status, 200);
+    const html = await home.text();
+    assert.ok(html.includes('已解锁 · Musicgraphy'));
+    assert.match(html, /action="\/logout"/);
+  });
+
+  test('R-102 POST /logout：303 → /login + Set-Cookie 清除；跨站 Origin 403；匿名 POST 被页面守卫先拦 302', async () => {
+    const ok = await app.request('/logout', {
+      method: 'POST',
+      headers: { Cookie: cookie, Origin: 'http://localhost', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: '',
+      redirect: 'manual'
+    });
+    assert.equal(ok.status, 303);
+    assert.equal(ok.headers.get('Location'), '/login');
+    const set = ok.headers.get('Set-Cookie') ?? '';
+    assert.match(set, /mg_session=;/, 'cookie 值清空（无状态会话 = 清 cookie 即完整退出语义）');
+    assert.match(set, /Max-Age=0|Expires=Thu/i, '删除指令（浏览器丢弃）');
+    const evil = await app.request('/logout', {
+      method: 'POST',
+      headers: { Cookie: cookie, Origin: 'https://evil.example', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: '',
+      redirect: 'manual'
+    });
+    assert.equal(evil.status, 403);
+    assert.match(await evil.text(), /cross-site logout rejected/);
+    const anon = await app.request('/logout', { method: 'POST', redirect: 'manual' });
+    assert.equal(anon.status, 302); // 守卫先于路由（B8 修复后拓扑）：无凭据谈不上 CSRF
+    assert.equal(anon.headers.get('Location'), '/login');
+  });
 });

@@ -41,7 +41,7 @@ import { buildHref, cabinSection, parseFilter, queryJsonToFilter, renderCollecti
 import { renderAlbumDetail, renderAlbumError, renderAlbumNotFound } from '../pages/album';
 import { renderAddPage } from '../pages/add';
 import { renderMetrics } from '../pages/metrics';
-import { renderTopsterDetail, renderTopsterList, renderTopsterPoster } from '../pages/topster';
+import { renderTopsterAbout, renderTopsterDetail, renderTopsterList, renderTopsterPoster } from '../pages/topster';
 import { buildTopsterSvg } from '../pages/topster-svg';
 import * as topster from '../db/topster';
 import { searchSuggestFragment } from '../pages/suggest';
@@ -488,6 +488,11 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     const { id } = dao.createTopster(title, subtitle);
     return c.redirect(`/topsters/${id}`, 303);
   });
+
+  // 内容说明页（R-101 · S2-1，评审案 docs/iteration-batch3-review.md Q1）：Topster 是什么/怎么建/分享口径
+  // （04B 引擎一）。注册必须在 /topsters/:id 之前——避免 "about" 被动态段捕获渲染 404（topster id 为
+  // UUID 永不冲突，顺序保证是护栏）。入口 = 全站页脚（html.ts siteFooter，R-101 入口缺口闭环）。
+  app.get('/topsters/about', (c) => c.html(renderTopsterAbout({ title: 'Musicgraphy · Topster 是什么' })));
 
   app.get('/topsters/:id', (c) => {
     const id = c.req.param('id');

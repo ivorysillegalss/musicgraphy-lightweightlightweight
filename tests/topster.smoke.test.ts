@@ -317,4 +317,25 @@ describe('Topster 页面通道（无 JS 基线 · POST+303）', () => {
     const poster = await get('/topsters/no-such-id/poster');
     assert.equal(poster.status, 404);
   });
+
+  test('R-101 内容说明页：/topsters/about 200 + 三段口径 + 不被 :id 动态段捕获（注册序护栏）', async () => {
+    const res = await get('/topsters/about');
+    assert.equal(res.status, 200); // "about" 未被 /topsters/:id 捕获渲染 404（路由注册在 :id 之前）
+    const html = await res.text();
+    assert.ok(html.includes('把你的 Collection 排成一张图')); // 是什么（View 语义）
+    assert.ok(html.includes('三步建一张')); // 怎么建
+    assert.ok(html.includes('分享的是作品图，不是产品')); // 分享口径（04B 引擎一）
+    assert.ok(html.includes('made with Musicgraphy')); // 署名链路衔接
+    assert.ok(html.includes('诚实边界'), 'SVG 上传限制如实披露（海报页补位）');
+    assert.ok(html.includes('href="/topsters"'), '入口链接（说明页 → 策展列表）');
+    assert.ok(html.includes('实时取自 Collection'), 'Topster=View 禁第二套数据口径（乙-7）');
+  });
+
+  test('R-101 全站页脚入口行（闭环「四页 0 处入口」缺口）+ R-102 登录态行/退出动作在档', async () => {
+    const html = await (await get('/topsters')).text();
+    assert.ok(html.includes('把品味排成一张图'));
+    assert.ok(html.includes('href="/topsters/about"'), '说明页入口');
+    assert.ok(html.includes('已解锁 · Musicgraphy'), 'R-102 登录态行（V10 守卫保证 layout 页必然已登录）');
+    assert.ok(html.includes('action="/logout"'), 'R-102 退出动作');
+  });
 });

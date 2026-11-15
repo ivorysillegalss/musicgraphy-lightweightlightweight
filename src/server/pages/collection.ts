@@ -5,7 +5,7 @@
  * chips = <a href="?…">、搜索 = GET form——可分享、可回退，无「应用/重置」按钮（FR-2 最不可返工决策）。
  * 计数 = dao.countAxes（轴排除式：每轴剔除自身筛选，FR-2「其余条件计数立即重算」）。
  */
-import { html } from 'hono/html';
+import { html, raw } from 'hono/html';
 import type { Filters } from '../db/sql';
 import type { CollectionItem, FacetCount } from '../db/types';
 import type { SavedView } from '../db/savedviews';
@@ -94,6 +94,17 @@ export function cabinSection(f: FilterState, counts: AxisCounts | null): Esc {
   const axis = (label: string, chips: Esc[]): Esc =>
     html`<div class="filter-axis"><span class="axis-label">${label}</span><div class="chip-list">${chips}</div></div>`;
 
+  // R-105 轴收纳（评审案 docs/iteration-batch3-review.md Q4）：长列表轴（Genre 22 项/年份 75 项/听期）
+  // 用原生 <details> 折叠——零 JS 可折叠原语（无 JS 基线最优），summary = 轴名 + 项数摘要。
+  // 缺省开合：Genre 恒展开（主浏览轴不加一跳，用户可手收）/年份·听期仅激活时展开（所选 chip 必然可见）；
+  // 已选标记按 active（= open 的轴除 Genre 外）显示。chips 仍是 <a href="?…">（DD3 URL 即状态零新参数），
+  // 岛屿按 .chip 类名委托拦截零改动。
+  const foldAxis = (label: string, chips: Esc[], open: boolean, active: boolean, yearBound: boolean): Esc =>
+    html`<details class="filter-axis axis-fold${yearBound ? ' axis-fold-year' : ''}"${open ? raw(' open') : ''}>
+    <summary><span class="axis-label">${label}</span><span class="axis-meta">${String(chips.length)} 项${active ? ' · 已选' : ''}</span></summary>
+    <div class="chip-list">${chips}</div>
+  </details>`;
+
   const facetChips = (facets: FacetCount[] | undefined, activeValue: string | number | null, render: (v: string) => { label: string; href: string; swatch?: string }): Esc[] =>
     (facets ?? [])
       .filter((c) => c.value !== null && (c.count > 0 || String(c.value) === String(activeValue)))
@@ -143,9 +154,9 @@ export function cabinSection(f: FilterState, counts: AxisCounts | null): Esc {
 
   return html`<div class="filter-cabin" role="group" aria-label="渐进式筛选舱">
   <div class="filter-axes">
-    ${axis('Genre', genreChips)}
-    ${axis('发行年份（Release）', yearChips)}
-    ${axis('我听的时期（Listened）', periodChips)}
+    ${foldAxis('Genre', genreChips, true, f.genre !== null, false)}
+    ${foldAxis('发行年份（Release）', yearChips, f.year !== null, f.year !== null, true)}
+    ${foldAxis('我听的时期（Listened）', periodChips, f.period !== null, f.period !== null, true)}
     ${axis('Favorite', favChips)}
     ${axis('Tag（我的属性）', tagChips)}
     ${axis('颜色（P1-4）', colorChips)}
@@ -180,11 +191,14 @@ export function resultsSection(items: CollectionItem[], f: FilterState, meta: { 
       hasActiveFilter(f) ? html`<a class="btn-text" href="${buildHref(EMPTY_FILTER)}">移除全部条件</a>` : html`<a class="btn btn-primary" href="/add">记录第一张</a>`
     );
   }
+  // R-104（评审案 docs/iteration-batch3-review.md Q3）：a+b 组合的服务端半边——
+  // has_next=false 时 SSR 渲染到底条（无 JS 同权）；#mg-top 锚点 = 回到顶部的纯原生跳转目标。
+  // 自动追加页数限制在 wall-scroll 岛屿（autoLeft=3 后转手动「加载更多」，cursor 服务端顺链零改动）。
   const next =
     meta.has_next && meta.next_cursor !== null
       ? html`<div class="wall-next"><a class="btn btn-secondary" href="${buildHref(f, {}, meta.next_cursor)}" rel="next" data-next>加载下一页</a></div>`
-      : '';
-  return html`${resultStatus(total)}${coverWallCards(items.map(wallCard))}${next}`;
+      : html`<div class="wall-end" role="status">已到底 · 匹配的专辑都在这了 <a class="btn-text" href="#mg-top">回到顶部</a></div>`;
+  return html`<div id="mg-top"></div>${resultStatus(total)}${coverWallCards(items.map(wallCard))}${next}`;
 }
 
 // ---------------------------------------------------------------- 外部候选（记录意图；no-JS 内嵌表单；已收藏前置标记防重复确认）

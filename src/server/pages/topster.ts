@@ -164,3 +164,41 @@ export function renderTopsterPoster(
 </main>`;
   return layout({ ...layoutOpts, body });
 }
+
+/**
+ * 内容说明页（R-101 · S2-1，评审案 docs/iteration-batch3-review.md Q1）：Topster 是什么 / 怎么建 /
+ * 分享价值。内容口径 = 02-变现文档包 04B 引擎一「分享的是作品图，不是产品」+ 海报页/SVG 导出链路的
+ * 诚实边界（主流平台不收 SVG 上传 → 海报页补位）。背景 = 2026-11-15 全站入口普查：/topsters 系列
+ * 四页 0 处 UI 入口且无功能说明——本页 + 页脚入口行（siteFooter）一并闭环；列表页空态文案已在档不改。
+ */
+export function renderTopsterAbout(layoutOpts: Omit<LayoutOptions, 'body'>): Esc {
+  const body = html`${siteHeader('', html`<a class="btn btn-primary" href="/topsters">← 我的策展</a>`)}
+<main style="max-width:720px;">
+  <div class="page-intro">
+    <h1>Topster · 把你的 Collection 排成一张图</h1>
+    <p>Topster 是你档案的策展视图：从 Collection 里挑一组专辑，排成一个顺序、写一句副标题——<strong>顺序即叙事</strong>。
+    它不是新的数据，只是档案的另一种看法：成员实时取自 Collection，删掉记录它就如实空着，容量 ≤60 张。</p>
+  </div>
+  <section style="margin-bottom: var(--space-xl);">
+    <h2 class="small mono" style="margin-top:0;">HOW · 三步建一张</h2>
+    <ol style="line-height:2; margin:0; padding-left:20px;">
+      <li>在 <a href="/topsters">我的策展</a> 新建一个策展——标题必填，副标题可选（如「这一年最常听的 25 张」）。</li>
+      <li>在策展页搜索<strong>你自己的档案</strong>把专辑加进来（只加你已记录的，不调外部服务）。</li>
+      <li>用 ↑ ↓ 调顺序，改标题副标题——你怎么排，它就怎么说。</li>
+    </ol>
+  </section>
+  <section style="margin-bottom: var(--space-xl);">
+    <h2 class="small mono" style="margin-top:0;">SHARE · 分享的是作品图，不是产品</h2>
+    <p>两张导出链路都在策展详情页（有成员才显示）：</p>
+    <p><strong>导出 SVG 图片</strong>——矢量图下载即得，封面走你档案的本地缓存，角落一行「made with Musicgraphy」署名内嵌。<span class="small" style="color:var(--color-muted-foreground);">诚实边界：主流社交平台一般不收 SVG 上传。</span></p>
+    <p><strong>海报页</strong>——干净的大网格 + 标题副标题 + 署名，全屏截图或系统打印即成图，是那条
+    诚实的补位路。</p>
+    <p>你的表达在前，Musicgraphy 只是角落的署名——分享发生在平台外、你的手里。</p>
+  </section>
+  <p>
+    <a class="btn btn-primary" href="/topsters">去我的策展</a>
+    <a class="btn btn-secondary" href="/">← 回 Collection</a>
+  </p>
+</main>`;
+  return layout({ ...layoutOpts, body });
+}

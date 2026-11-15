@@ -5,7 +5,7 @@
 // ④ CSRF：unsafe 方法 + cookie 通道 → 校验 Origin / Sec-Fetch-Site（约 10 行）
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { Context, Hono } from 'hono';
-import { getCookie, setCookie } from 'hono/cookie';
+import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { html } from 'hono/html';
 import type { Config } from './config';
 import { errorBody } from './http';
@@ -126,6 +126,16 @@ export function installAuth(app: Hono, cfg: Config): void {
     }
     if (!isAuthed(c, cfg)) return c.redirect('/login', 302);
     await next();
+  });
+
+  // 退出（R-102 最小增量，评审案 docs/iteration-batch3-review.md Q2）：无状态会话无表可删——
+  // 清 cookie 即完整退出语义（sameOrigin 与 /login 同款；303 回登录页）。
+  // 注册在 use('/*') 守卫之后：匿名 POST 先被守卫 302（Hono handler 链按注册序执行，
+  // 守卫先于本路由——与 pagesRoutes 各页面动作同拓扑）。
+  app.post('/logout', (c) => {
+    if (!sameOrigin(c)) return c.text('cross-site logout rejected', 403);
+    deleteCookie(c, COOKIE, { path: '/' });
+    return c.redirect('/login', 303);
   });
 
   // API 守卫：/api/v1/* 除 health 外均需凭据（IM-11：health 对守护探测保持公开，仅非敏感指标）

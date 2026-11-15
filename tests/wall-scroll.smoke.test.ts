@@ -18,6 +18,7 @@ import { MusicBrainzClient } from '../src/server/metadata/musicbrainz';
 import { MusicBrainzSource } from '../src/server/metadata/sources';
 import { MetadataRateLimiter } from '../src/server/metadata/queue';
 import { mount as mountWallScroll } from '../src/client/islands/wall-scroll';
+import { cabinSection, EMPTY_FILTER } from '../src/server/pages/collection';
 
 const stubFetch = (async () =>
   new Response(JSON.stringify({ releases: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } })) as typeof fetch;
@@ -104,11 +105,38 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
         assert.equal(page, 2, '130 张应恰翻 3 页（60/60/10）');
         assert.equal(ids.length, 10, '末页应为剩余 10 张');
         assert.ok(!html.includes('data-next'), '末页不得残留 data-next');
+        assert.match(html, /class="wall-end"/, 'R-104 b：末页 SSR 渲染到底条');
+        assert.match(html, /回到顶部/);
         return;
       }
       assert.equal(ids.length, PAGE);
+      assert.ok(!html.includes('class="wall-end"'), '有下一页不得提前出到底条');
     }
     assert.fail('cursor 链异常（超页数）');
+  });
+
+  test('R-104：单页结果（has_next=false）SSR 到底条 + #mg-top 回顶锚点；多页结果首页无到底条', async () => {
+    const single = await get('/fragment/wall?q=0001'); // 仅命中 Wall Album 0001（四位补零编号唯一）
+    assert.equal(single.status, 200);
+    const h1 = await single.text();
+    assert.match(h1, /class="wall-end"/);
+    assert.match(h1, /id="mg-top"/); // 回到顶部 = 纯原生 <a href="#mg-top">（零 JS）
+    assert.ok(!h1.includes('data-next'), '单页结果不得有分页链接');
+    const multi = await get('/fragment/wall');
+    const h2 = await multi.text();
+    assert.match(h2, /data-next/);
+    assert.match(h2, /id="mg-top"/); // 锚点恒在（回顶目标）
+    assert.ok(!h2.includes('class="wall-end"'), '有下一页不得提前出到底条');
+  });
+
+  test('R-105：/fragment/cabin 长轴收纳形态在档（details/summary/axis-meta；chips 语义零改动）', async () => {
+    const res = await get('/fragment/cabin');
+    assert.equal(res.status, 200);
+    const html = await res.text();
+    assert.match(html, /<details class="filter-axis axis-fold" open>/); // Genre 缺省展开
+    assert.match(html, /<details class="filter-axis axis-fold axis-fold-year">/); // 年份/听期缺省收起（无激活筛选）
+    assert.match(html, /axis-meta/); // 项数摘要
+    assert.ok(!html.includes('axis-fold-year" open'), '无激活筛选时年份轴不得自动展开');
   });
 
   // ---------------------------------------------------------- B：岛屿行为（假 DOM）
@@ -117,6 +145,7 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
       href: string;
       isConnected: boolean;
       busy: string | null;
+      textContent: string;
       getAttribute(name: string): string | null;
       setAttribute(name: string, v: string): void;
       removeAttribute(name: string): void;
@@ -130,23 +159,29 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
     const frag = (cards: number, nextCursor: string | null): string =>
       `<div class="result-status" role="status"><strong>${String(cards)} 张匹配</strong></div>` +
       `<div class="cover-wall">${Array.from({ length: cards }, (_, i) => `<a class="cover-card" href="/album/c${String(i)}">C</a>`).join('')}</div>` +
-      (nextCursor === null ? '' : `<div class="wall-next"><a class="btn btn-secondary" href="?cursor=${nextCursor}" rel="next" data-next>加载下一页</a></div>`);
+      (nextCursor === null
+        ? '<div class="wall-end" role="status">已到底 · 匹配的专辑都在这了 <a class="btn-text" href="#mg-top">回到顶部</a></div>' // R-104 b：服务端 resultsSection 同款
+        : `<div class="wall-next"><a class="btn btn-secondary" href="?cursor=${nextCursor}" rel="next" data-next>加载下一页</a></div>`);
 
     /** 按片段形态做最小解析的 document.createElement('template') 桩（覆盖 .cover-wall 计数与 .wall-next 游标）。 */
     const installParserDocument = (): void => {
       globalThis.document = {
         createElement: () => ({
           set innerHTML(v: string) {
-            const self = this as unknown as { content?: unknown; __cards: number; __wall: boolean; __cursor: string | null };
+            const self = this as unknown as { content?: unknown; __cards: number; __wall: boolean; __cursor: string | null; __end: boolean };
             self.__wall = /class="cover-wall"/.test(v);
             self.__cards = (v.match(/class="cover-card"/g) ?? []).length;
             const hrefM = /href="\?cursor=([^"]+)"/.exec(v);
             self.__cursor = /class="wall-next"/.test(v) ? (hrefM?.[1] ?? null) : null;
+            self.__end = /class="wall-end"/.test(v); // R-104 b：服务端到底条标记
             self.content = {
               querySelector(sel: string): unknown {
                 if (sel === '.cover-wall') return self.__wall ? { children: Array.from({ length: self.__cards }, () => ({})) } : null;
                 if (sel === '.wall-next') {
                   return self.__cursor === null ? null : { getAttribute: (n: string) => (n === 'href' ? `?cursor=${self.__cursor ?? ''}` : null) };
+                }
+                if (sel === '.wall-end') {
+                  return self.__end ? { getAttribute: () => null } : null; // 到底条无 href（fake append 记 linkHref=null）
                 }
                 return null;
               }
@@ -157,7 +192,7 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
     };
 
     interface Harness {
-      root: { linkHref: string | null; injected: string[]; appendedToRoot: string[]; wallCards: object[] };
+      root: { linkHref: string | null; linkText: string; injected: string[]; endInjected: string[]; appendedToRoot: string[]; wallCards: object[] };
       clicks: Array<(e: unknown) => void>;
       ioInstances: IoStub[];
       link(): LinkStub;
@@ -168,13 +203,21 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
     const harness = (responses: Array<{ status: number; body: string } | Error>, initialHref = 'cursor=SRV1'): Harness => {
       const state = {
         linkHref: initialHref as string | null,
+        linkText: '加载下一页' as string, // R-104：岛屿手动态改文案 → textContent 经 state 跟踪
         injected: [] as string[],
+        endInjected: [] as string[], // R-104 兜底注入路径（insertAdjacentHTML）
         appendedToRoot: [] as string[],
         wallCards: [] as object[],
         clicks: [] as Array<(e: unknown) => void>,
         ioInstances: [] as IoStub[]
       };
       const link = (): LinkStub => ({
+        get textContent() {
+          return state.linkText;
+        },
+        set textContent(v: string) {
+          state.linkText = v;
+        },
         href: state.linkHref ?? '',
         isConnected: true,
         busy: null,
@@ -210,6 +253,9 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
         },
         addEventListener(_type: string, handler: (e: unknown) => void): void {
           state.clicks.push(handler);
+        },
+        insertAdjacentHTML(_pos: string, html: string): void {
+          state.endInjected.push(html); // R-104 兜底到底条注入路径
         },
         set innerHTML(v: string) {
           state.injected.push(v);
@@ -278,8 +324,41 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
       assert.equal(h.root.wallCards.length, 160, '三页卡片全部追加进 .cover-wall');
       const last = h.ioInstances.at(-1);
       assert.ok(last !== undefined && last.disconnectCount > 0, 'has_next=false 后应 disconnect（解除观察）');
-      assert.equal(h.root.appendedToRoot.length, 2, '新分页链接上墙 2 次（第 3 页无下一页）');
+      assert.equal(h.root.appendedToRoot.length, 3, '根级上墙 3 次（2 个分页链接 + R-104 服务端到底条）');
       assert.equal(h.root.injected.length, 0, '正常路径不得注入错误条');
+    });
+
+    test('R-104 a：自动追加 3 页后转手动——IO 不再创建 + 文案改「加载更多（手动）」+ 点击续页额度不恢复', async () => {
+      const h = harness([{ status: 200, body: frag(60, 'SRV2') }, { status: 200, body: frag(60, 'SRV3') }, { status: 200, body: frag(60, 'SRV4') }, { status: 200, body: frag(40, null) }]);
+      h.fire();
+      await flush(); // 自动第 1 页
+      h.fire();
+      await flush(); // 自动第 2 页
+      h.fire();
+      await flush(); // 自动第 3 页 → 额度用尽转手动
+      assert.equal(h.root.wallCards.length, 180, '三页自动追加');
+      assert.equal(h.ioInstances.length, 3, 'mount + 两次重布防共 3 个 IO；额度用尽后不得再创建');
+      assert.equal(h.root.linkText, '加载更多（手动）', '手动态文案（增强层；服务端原文/无 JS 视角不动）');
+      const target = new (globalThis.Element as unknown as { new (): { closest: (s: string) => unknown } })();
+      target.closest = () => h.link();
+      h.clicks[0]?.({ target, preventDefault: () => {} });
+      await flush(); // 手动点击续第 4 页
+      assert.equal(h.root.wallCards.length, 220, '手动态点击继续追加（cursor 顺链不破坏）');
+      assert.equal(h.ioInstances.length, 3, '手动态仍不创建 IO（自动滚已停）');
+      assert.equal(h.root.linkText, '加载更多（手动）', '手动态追加后文案保持');
+      assert.equal(h.root.injected.length, 0);
+    });
+
+    test('R-104 b 兜底：片段缺 .wall-end（无下一页）→ 注入同款到底条（防御性路径）', async () => {
+      const bare = `<div class="cover-wall">${'<a class="cover-card" href="/album/x">C</a>'.repeat(3)}</div>`; // 无 wall-next 无 wall-end
+      const h = harness([{ status: 200, body: bare }]);
+      h.fire();
+      await flush();
+      assert.equal(h.root.wallCards.length, 3);
+      assert.equal(h.root.endInjected.length, 1, '兜底注入到底条');
+      assert.match(h.root.endInjected[0] ?? '', /wall-end/);
+      assert.match(h.root.endInjected[0] ?? '', /回到顶部/);
+      assert.equal(h.root.injected.length, 0);
     });
 
     test('cursor 只用服务端下发值：fetch URL 逐字核对', async () => {
@@ -343,5 +422,39 @@ describe('wall-scroll 岛屿（FR-5，第 5 岛屿）', () => {
       assert.equal(h.root.wallCards.length, 0, '旧筛选的页不得追加进新墙');
       assert.equal(h.root.injected.length, 0);
     });
+  });
+});
+
+// ---------------------------------------------------------- R-105 筛选舱收纳（cabinSection 纯函数；评审案 docs/iteration-batch3-review.md Q4）
+describe('R-105 筛选舱收纳（cabinSection 纯函数）', () => {
+  const counts = {
+    genre: [{ value: 'Jazz', count: 3 }, { value: 'Electronic', count: 12 }],
+    year: Array.from({ length: 75 }, (_, i) => ({ value: 1951 + i, count: 1 })), // 长尾年份轴（真库 75 项同量级）
+    listened: [{ value: '2026', count: 4 }],
+    favorite: [{ value: 1, count: 7 }],
+    tag: [{ value: '深夜', count: 2 }],
+    color: [{ value: 8, count: 5 }]
+  };
+
+  test('缺省开合：Genre 恒展开 / 年份·听期收起；summary = 轴名 + 项数摘要；Favorite/Tag/颜色仍平铺', () => {
+    const html = String(cabinSection(EMPTY_FILTER, counts));
+    assert.equal((html.match(/<details class="filter-axis axis-fold/g) ?? []).length, 3, '恰好三轴收纳（Genre/年份/听期）');
+    assert.ok(html.includes('<details class="filter-axis axis-fold" open>'), 'Genre 缺省展开（主浏览轴不加一跳）');
+    assert.ok(html.includes('<details class="filter-axis axis-fold axis-fold-year">'), '年份轴缺省收起');
+    assert.ok(html.includes('<span class="axis-meta">75 项</span>'), '年份轴项数摘要');
+    assert.ok(html.includes('<span class="axis-label">Genre</span><span class="axis-meta">2 项</span>'), 'Genre 摘要（无激活筛选不带已选标记）');
+    assert.ok(html.includes('href="/?genre=Jazz"'), 'Genre chip 仍是 <a href="?…">（DD3 URL 即状态零新参数）');
+    assert.ok(html.includes('href="/?year=1951"'), '年份 chip href 原语义');
+    assert.ok(html.includes('class="filter-axis"'), 'Favorite/Tag/颜色三轴仍为平铺形态');
+    assert.ok(html.includes('aria-label="渐进式筛选舱"'), '舱 role/aria 不变');
+  });
+
+  test('激活态：年份轴服务端置 open + 「已选」标记；激活 chip 可单独移除（轴排除语义零改动）', () => {
+    const html = String(cabinSection({ ...EMPTY_FILTER, year: 2000 }, counts));
+    assert.ok(html.includes('<details class="filter-axis axis-fold axis-fold-year" open>'), '激活年份轴展开（所选 chip 必然可见）');
+    assert.ok(html.includes('75 项 · 已选'), 'summary 已选标记');
+    assert.ok(html.includes('移除条件 2000（发行）'), '激活 chip 进入已选行可单独移除');
+    assert.ok(html.includes('href="/?year=1951"'), '年份 chip = 轴内切换（替换 year 参数，buildHref 语义原样）');
+    assert.ok(html.includes('href="/?genre=Jazz&amp;year=2000"'), 'Genre chip 携带全部激活筛选（跨轴叠加语义零改动；& 属性值转义）');
   });
 });

@@ -11,6 +11,7 @@ import { MetadataRateLimiter } from './metadata/queue';
 import { MusicBrainzClient } from './metadata/musicbrainz';
 import { DeezerSource, DiscogsSource, ITunesSource, MusicBrainzSource, type AlbumSource } from './metadata/sources';
 import { CoverGate } from './metadata/cover-gate';
+import { startCoverBackfill } from './metadata/cover-backfill';
 
 const cfg = loadConfig();
 ensureDirs(cfg);
@@ -53,6 +54,10 @@ const onAlbumAdded = (albumId: string, _sourceId: string, coverUrl: string | nul
 };
 
 const app = createApp(dao, cfg, sources, { onAlbumAdded, cover: { gate: coverGate }, telemetry });
+
+// IM-22 R4 回填驱动接线（IM-32 · 2026-11-15）：boot 首扫 + 每 10min 重扫——
+// 扫 cover_url 在档而 cover_local 缺失的专辑，经空闲门注入补齐（交互优先）。
+startCoverBackfill(db, coverGate, cfg.coversDir, cfg.userAgent);
 
 // 备份（R1/V14）：启动时 + 每日定时；按天去重，保留 7 天；失败不阻塞
 try {

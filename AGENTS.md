@@ -10,9 +10,13 @@
 - 本仓 = Musicgraphy 2.0 唯一主线代码仓（方案 B · 12 周验证冲刺）。
   `../Musicgraphy-2.0-代码库/` 为遗留存档仓（V10 鉴权实现 + D2 spike 报告在此，
   W1-1 鉴权从它移植）——**不得合并/删除/改动，归属调整须用户裁决**。
-- 架构红线：SQLite(node:sqlite) + Hono + SSR 岛屿；运行时依赖 ≤ 2
-  （hono + @hono/node-server，devDeps 不占预算）；RSS < 100MB；
-  DAO < 200 行（ADR-002 护栏）；hono/html 禁 raw 插用户数据；无 JS 基线。
+- 架构红线（**2026-11-15 用户批注修订，裁决 = `05/实现决策记录.md` IM-30**）：
+  SQLite(node:sqlite) + Hono；hono/html 禁 raw 插用户数据；DD3 URL 即状态；
+  隐私红线 + 资产自托管零 CDN；上游限流 ≥1s 串行；备份 = VACUUM INTO。
+  ~~运行时依赖 ≤ 2~~ / ~~RSS < 100MB~~ / ~~DAO < 200 行~~ / ~~SSR 岛屿无 JS 基线~~
+  四项经用户批注**废止**（依赖数/RSS/DAO 行数转观察指标随卡 evidence 如实报告，
+  不再作为交付门槛）；chips=`<a>`/GET form/POST+303 转「按需择优」非强制；
+  `npm run check` 全绿不变（DoD §2）。
 - 关键规格出处：五维复审 V1–V16 与存储评审 R1–R10
   （`../Musicgraphy-2.0-文档包/05-系统架构设计/`）；实现决策 IM-1~IM-9
   （`05/实现决策记录.md`，只增不改）。

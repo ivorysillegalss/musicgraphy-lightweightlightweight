@@ -116,6 +116,10 @@ Musicgraphy-2.0-文档包\
   叙事/cratedigger.js 翻箱浏览/Every Noise at Once 流派星图），每站 = 设计原理
   分析 + 借鉴映射 + 草案方向 + 红线适配 + 开放问题；看板卡 S2-4~S2-7
   （⑦专项主线专区，pending，2026-11-15 用户指令建卡）。
+  同文档第二部分（2026-11-15 用户第二令）：四站实现原理证据级拆解
+  （cratedigger 源码级/everynoise 源页级/albumatlas·chiara 浏览器实测级）
+  + 0→1 需求分割（每站 P1–P4）；看板卡 S2-8~S2-11 原理分析（done）
+  + S2-12~S2-27 分割候选（pending，后期筛选）。
 
 【02-变现文档包】执行层
   00-README.md      两套方案权重模型（A 盈利优先 vs B 增长验证优先，

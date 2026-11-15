@@ -136,6 +136,15 @@ window.MG_DAILY_REPORTS = {
             '终态：**188 张收藏完整拉回、Unknown Artist = 0**（王菲/陈绮贞/陶喆/Prince/Pink Floyd/The Cure/青葉市子/放課後ティータイム 中英日全对）、preview 新 185 / 已有 3（dedupKey 实证命中）、零写入。披露：修复前同接口曾拉 2032 张（全 Unknown）——两次会话上游集合规模不同，正式导入后人工抽查。IM-31；正式导入（写库 + 封面下载）待用户点头。',
           ],
         },
+        {
+          heading: '设计参考第二令：0→1 实现分割登记（补记 · 同日 · 用户指令）',
+          kind: 'list',
+          items: [
+            '用户令「将这些需求分别都已实现原理角度进行需求分割 包括 分析他们的实现原理卡片 以及从0到1实现的需求分割 分别都计入这个专项 后期进行筛选」。四站实现原理证据级拆解（方法 = 07 包 03 号 Radiooooo 拆解同族，2026-11-15 实测）：Album Atlas® = SvelteKit SPA + three InstancedMesh×21/WebGLRenderer×36/Raycaster×8/WebAudio（首屏 canvas=0，搜艺术家后初始化；chunk 828KB 关键词计数）；Chiara Luzzana = Webflow + locomotive-scroll + three 反应球（FBX+自定义 shader）+ 整站单音源 mainSound.mp3 经 WebAudio 程序化编排（加载时零 audio 元素）；cratedigger.js = 源码级逆向（MIT，GitHub contents 逐行）：薄盒建模 BoxGeometry(100,1.5,100) + 四态 TWEEN 状态机（pushed/pulled/shown/flipped，Quartic.Out 1000/700/800ms）+ 拖拽翻找 + DoF 默认关；Every Noise = 源页 3.5MB 纯 DOM 绝对定位标签（非 canvas）、服务端预计算坐标内联 style、内联 preview_url 即点即播 + scan() 自动扫听 + Spotify API 关停进维护态（外部数据依赖教训 → R-109 本地自算依据）。',
+            '0→1 分割候选卡 16 张（每站 P1→P2→P3→P4 串行 deps 链，跨站零耦合可并行）：R-106 = S2-12 数据与布局（分页+atlas-layout 预计算）→ S2-13 漫游画布（载体与 R-103/DR-M1 同批评审）→ S2-14 交互与 URL 即状态 → S2-15 就地试听（可选）；R-107 = S2-16 文案叙事层（零架构，建议最先）→ S2-17 感官层开关（默认关，opt-out cookie 姿态）→ S2-18 声音点缀（单音源自托管，音频源评审后）→ S2-19 视觉反应体（可选，AnalyserNode+Canvas 低依赖替代优先）；R-108 = S2-20 翻箱数据通道（分页+随机一张本地端点）→ S2-21 侧脊陈列（CSS 3D 翻译状态机，WebGL 非必须）→ S2-22 键盘流（四态 CSS 化+URL 即状态）→ S2-23 随机一张+R-104 联动；R-109 = S2-24 共现矩阵+布局（SQLite 本地自算）→ S2-25 SSR 星图（绝对定位标签，everynoise 机制与本项目 SSR 哲学同构、成本最低段）→ S2-26 直达筛选（chips 同语义）→ S2-27 scan 扫听（可选）。',
+            '落点：SPECIAL 专区建卡 20 张 = 原理分析卡 S2-8~S2-11（done，evidence = 拆解文档各站节+证据清单）+ 分割候选卡 S2-12~S2-27（pending）；S2-4~S2-7 各补 history v2 指针；全板 48→68 卡（SPECIAL 线 6→26 卡）。**分割卡 = 筛选候选非排期承诺**——后期用户筛选组合（三个 P4 可选段音频源合规评审后立项、无源即砍）；与 Radiooooo DR 草案卡留文档内的口径不同（本令明确「计入专项」故建看板卡，协议 §7⑥ 登记）。事实源 = 需求草案-2026-11-15-设计参考第二批.md 第二部分。本批零代码变更纯登记；随本批提交并重部署线上。',
+          ],
+        },
       ],
 
       evidence: [
@@ -146,6 +155,7 @@ window.MG_DAILY_REPORTS = {
         { label: 'release 基线', value: 'origin = github.com/ivorysillegalss/musicgraphy-lightweightlightweight（空仓首推 main→main 新建分支；单拼名 musicgraphy-lightweight ls-remote 核实不存在）；基线 dae9ae0；门禁复跑 7×182/182（首跑 1 间歇未复现）；tracked 敏感排查零命中' },
         { label: '看板改版证据', value: 'node --test tests/ 11 项全绿（+字段完整性断言 + scope 词表 16 域）；语法自检 ok（tracks=7 / cards=44）；六件变更 = app.js / progress-data.js / 看板更新协议.md / 00-文件目录说明.txt / tests/docpackage.test.mjs / daily-reports.js；随本批提交并重部署线上' },
         { label: '设计参考第二批', value: '需求草案 R-106~R-109（01-产品理念终稿/需求草案-2026-11-15-设计参考第二批.md 新建）+ SPECIAL 专区 S2-4~S2-7 pending（progress-data.js 全板 44→48 卡）；站点核查 = 页面抓取 + github.com/risq/cratedigger README；node --test tests/ 全绿；随本批提交并重部署线上' },
+        { label: '0→1 分割登记', value: '原理分析卡 S2-8~S2-11（done，四站证据级拆解：cratedigger 源码级/everynoise 源页级/albumatlas·chiara 浏览器实测级）+ 分割候选卡 S2-12~S2-27（pending，每站 P1→P4 链，后期筛选）；全板 48→68 卡；事实源 = 需求草案第二批文档第二部分；协议 §7⑥；node --test tests/ 全绿；随本批提交并重部署线上' },
       ],
     },
 

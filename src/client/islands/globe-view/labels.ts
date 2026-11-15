@@ -4,8 +4,9 @@
  * 标注渲染决策（已裁决，代码注释披露）：**不使用 maplibre symbol 层**——symbol 文本需要
  * glyphs PBF 字体源，自托管成本与乙-5 红线冲突面大（评审案 5db47b4 §5 第 7 条二选一，
  * 取方案②）；改用 **DOM 标注**：hover/选中时在对应位置挂 maplibre `Marker`（DOM 元素，
- * 样式走 app.css globe 追加段），与 Radiooooo 用 `mapboxgl.Marker` DOM 标注
- * （设计参考 03 §2.2）同款思路。本文件因此只产出「点位 + 国名」纯数据，零渲染依赖。
+ * 样式走 app.css globe 追加段），与 Radiooooo 的地图 DOM 标注（设计参考 03 §2.2）同款
+ * 思路。本文件因此只产出「点位 + 国名」纯数据，零渲染依赖。
+ * （DR-I1 红线审计注：本目录全部源码禁外部服务字面量，豁免清单为空——注释措辞已随之收敛。）
  *
  * 红线：本文件禁止 import maplibre 或任何渲染库（标注点 = 纯数据，可单测断言）。
  */
@@ -116,6 +117,36 @@ function largestOuterRing(geometry: GeoGeometryLike | null): Ring | null {
 /** 单要素代表点（外包矩形质心；几何无效返回 null）。 */
 export function featureLabelPoint(geometry: GeoGeometryLike | null): { lng: number; lat: number } | null {
   return ringBboxCenter(largestOuterRing(geometry) ?? []);
+}
+
+/** 外包矩形（相机聚焦用；DR-M4 camera.ts focusViewFromBbox 的输入形状）。 */
+export interface GeoBbox {
+  minLng: number;
+  minLat: number;
+  maxLng: number;
+  maxLat: number;
+}
+
+/**
+ * 单要素外包矩形：取**代表多边形（最大外环）**的 bbox——与代表点同环，
+ * 聚焦中心恒等于标注点位（点击聚焦不跳位）；无有效坐标返回 null。
+ */
+export function featureBbox(geometry: GeoGeometryLike | null): GeoBbox | null {
+  const ring = largestOuterRing(geometry);
+  if (ring === null) return null;
+  let minLng = Infinity;
+  let maxLng = -Infinity;
+  let minLat = Infinity;
+  let maxLat = -Infinity;
+  for (const pos of ring) {
+    if (!Array.isArray(pos) || typeof pos[0] !== 'number' || typeof pos[1] !== 'number') continue;
+    if (pos[0] < minLng) minLng = pos[0];
+    if (pos[0] > maxLng) maxLng = pos[0];
+    if (pos[1] < minLat) minLat = pos[1];
+    if (pos[1] > maxLat) maxLat = pos[1];
+  }
+  if (!Number.isFinite(minLng) || !Number.isFinite(minLat)) return null;
+  return { minLng, minLat, maxLng, maxLat };
 }
 
 /** 坐标降密至 5 位小数（与 DR-G1 资产精度纪律一致）。 */

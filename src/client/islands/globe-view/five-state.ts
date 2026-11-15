@@ -54,16 +54,30 @@ function requireToken(tokens: FiveStateTokens, key: keyof FiveStateTokens): stri
   return v;
 }
 
-/** 白名单匹配表达式（要素属性 iso_a2 或 iso_a3 任一命中 = 可用）。 */
+/**
+ * 白名单匹配表达式（要素属性命中任一档 = 可用；'-99' 兜底裁决 = D4 落定）：
+ *   ① iso_a2（in）② iso_a3（in）③ 'name:' + name_en（match + concat + coalesce）。
+ * 裁决依据：NE 110m 五要素 iso_a2/iso_a3 均为 '-99'（France/Norway/北塞浦路斯/
+ * 索马里兰/科索沃）——前两档 ISO 匹配永远救不了它们；JS 侧 geoFeatureKey 走
+ * 'name:' 前缀兜底键，GPU 侧补第三档同口径（assets 保证 name_en 非空字符串，
+ * coalesce 仍防御缺槽位）。name 兜底用 match 而非第三条 in：in+concat 的语义
+ * 等价，但既有 DR-M3 断言「ISO 档 = 恰两条 in 匹配」仍成立（D4 条款显式可辨）。
+ * 白名单含 'name:France'/'name:Norway'（真实国家）→ 基态正常显示；其余三个
+ * -99 要素不入名单 → 恒 empty 近隐身（诚实呈现「无档案」）。
+ */
 function inListExpression(availableIsoCodes: string[]): DataExpression {
   const codes = [...availableIsoCodes];
-  // 已知边界（评审案披露口径）：NE 110m 有 5 个要素 iso_a2 与 iso_a3 均为 '-99'
-  // （France/Norway/北塞浦路斯/索马里兰/科索沃）——白名单模式下它们恒 empty，
-  // D4 接 G2 可用性 API 时按该 API 的 isocode 口径裁决兜底（如 name 兜底），本层不预置。
   return [
     'any',
     ['in', ['get', 'iso_a2'], ['literal', codes]],
-    ['in', ['get', 'iso_a3'], ['literal', codes]]
+    ['in', ['get', 'iso_a3'], ['literal', codes]],
+    [
+      'match',
+      ['concat', 'name:', ['coalesce', ['get', 'name_en'], '']],
+      ['literal', codes],
+      true,
+      false
+    ]
   ];
 }
 

@@ -1,0 +1,33 @@
+{
+  "comment": "DR-M4 · G2 静态替身（walking skeleton 白名单）：本文件 = /api/v1/geo/availability（G2 真 API）落地前的演示数据。fetch 此 JSON 的函数 = src/client/islands/globe-view/availability.ts fetchAvailability——未来接真 API 的唯一改动位置。键口径 = geoFeatureKey 同源三档：iso_a2 优先 → iso_a3 → 'name:' 前缀 name_en；NE 110m 的 France/Norway 两个真实国家 iso_a2/iso_a3 均为 '-99'，故以 name:France / name:Norway 入列（北塞浦路斯/索马兰/科索沃三个 -99 要素不入列 = 恒 empty 态，诚实呈现）。资产自托管零 CDN（乙-5）。",
+  "available": [
+    "CN",
+    "US",
+    "JP",
+    "GB",
+    "DE",
+    "BR",
+    "CA",
+    "IT",
+    "ES",
+    "KR",
+    "RU",
+    "IN",
+    "MX",
+    "AU",
+    "SE",
+    "NL",
+    "AR",
+    "EG",
+    "ZA",
+    "NG",
+    "TR",
+    "PT",
+    "PL",
+    "GR",
+    "IE",
+    "AT",
+    "name:France",
+    "name:Norway"
+  ]
+}

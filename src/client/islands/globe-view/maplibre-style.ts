@@ -73,16 +73,21 @@ const asExpression = (e: DataExpression): ExpressionSpecification => e as unknow
  * buildMapStyle：主题 id → 自托管 StyleSpecification（纯函数；读色经注入的 CssVarReader）。
  * @param themeId 'light' | 'dark'（未知 id 抛错，与注册表校验同语义）
  * @param readVar 可选 token 读取器（缺省 = documentElement 计算样式；无 DOM 环境必须注入）
+ * @param availableIsoCodes 可用性白名单（D4 · geoFeatureKey 同源键：iso_a2 / iso_a3 /
+ *        'name:' 前缀 name_en——'-99' 兜底裁决见 five-state.ts）；null = 全部可用
+ *        （无 empty 分支）。适配器在白名单异步就绪后以 setStyle diff 重建 paint。
  */
-export function buildMapStyle(themeId: string, readVar?: CssVarReader): StyleSpecification {
+export function buildMapStyle(
+  themeId: string,
+  readVar?: CssVarReader,
+  availableIsoCodes: string[] | null = null
+): StyleSpecification {
   if (!(GLOBE_THEME_IDS as readonly string[]).includes(themeId)) {
     throw new Error(`[globe-view] 未知主题 id「${themeId}」——注册表内无此主题。`);
   }
   const read = readVar ?? defaultCssVarReader();
   const t = readGlobeTokens(read);
-  // D3 阶段白名单未接 = 全部可用（availableIsoCodes 传 null）；D4 派工接 Mock 白名单时
-  // 经 StylePort/theme 之外的可用性通道注入（评审案 §5 第 4 条：业务维度状态入 URL 归 DR-M4）。
-  const fillPaint = buildFillPaint(null, { accent: t['--globe-accent'], base: t['--globe-land'] });
+  const fillPaint = buildFillPaint(availableIsoCodes, { accent: t['--globe-accent'], base: t['--globe-land'] });
   return {
     version: 8,
     name: `musicgraphy-globe-${themeId}`,

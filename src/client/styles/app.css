@@ -367,3 +367,22 @@ body[data-sensory="on"] .spine { transition: transform 0.28s cubic-bezier(0.22, 
 .panorama-canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 .panorama-noscript { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-sm); padding: var(--space-lg); text-align: center; }
 .panorama-hint { margin-top: var(--space-sm); }
+
+/* ============================================================
+   globe-view D4 追加段（DR-M4 相机编排与交互接线 · 派工 D4 2026-11-15）
+   ——既有样式零改动；仅新增主题切换控件样式（空态点击通知复用文件内既有 .toast）。
+   色值/字体/间距全部引用 tokens.css 既有变量（MASTER token 单一事实源不破）。
+   ============================================================ */
+/* 主题切换控件：岛根 role="img" 的兄弟节点（AT 可达），地图下方静态流式排布 */
+.globe-theme {
+  display: flex; justify-content: flex-end; gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
+.globe-theme button {
+  font-family: var(--font-meta); font-size: 11px; letter-spacing: 0.06em;
+  background: var(--color-card); color: var(--color-card-foreground);
+  border: var(--border-hairline); border-radius: var(--radius-sm);
+  padding: 4px 10px; cursor: pointer; box-shadow: var(--shadow-sm);
+}
+.globe-theme button[aria-pressed="true"] { border-color: var(--globe-accent); color: var(--color-accent-text); }
+.globe-theme button:focus-visible { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }

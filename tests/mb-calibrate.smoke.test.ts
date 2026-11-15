@@ -152,14 +152,14 @@ describe('B7 MB 按需权威化（IM-23 Q1 路线 B 后置半截）', () => {
     try {
       const idA = seedNetease(f.db, f.dao, '专辑甲');
       seedNetease(f.db, f.dao, '专辑乙');
-      const err = new UpstreamError(503, 'upstream_rate_limited', 'MusicBrainz 拒绝（超速）', 30);
+      const err = new UpstreamError(500, 'upstream_error', 'MusicBrainz HTTP 500'); // 非 503 → 走 fail-soft 直判（503 退避由专项测试覆盖）
       const { client } = stubClient([err, HIT('mbid-2')]);
       const s = await calibrateRows(f.dao, listNeteaseRows(f.db), client);
       assert.equal(s.failed, 1);
       assert.equal(s.calibrated, 1, '第二行不受首行失败连坐');
       assert.equal(s.failures.length, 1);
       const f0 = s.failures[0] ?? '';
-      assert.ok(f0.includes('专辑甲') && f0.includes('超速'), `失败清单含行名与上游错误文本：${f0}`);
+      assert.ok(f0.includes('专辑甲') && f0.includes('HTTP 500'), `失败清单含行名与上游错误文本：${f0}`);
       assert.deepEqual(albumOf(f.db, idA).alias_sources, [], '失败行零写入');
     } finally {
       f.cleanup();
@@ -295,6 +295,29 @@ describe('B7 MB 按需权威化（IM-23 Q1 路线 B 后置半截）', () => {
       assert.equal(a.country, 'TW');
       assert.deepEqual(a.genres, [], 'genres 保留空（诚实缺档，次轮重试）');
       assert.deepEqual(a.alias_sources, [{ source: 'musicbrainz', source_id: 'mbid-1' }], 'MBID 关联照常');
+    } finally {
+      f.cleanup();
+    }
+  });
+
+  test('503 退避重试（R-110 补记）：Retry-After 尊重后原行重试一次；二次 503 才计 failed', async () => {
+    const f = tempDb('backoff');
+    try {
+      const idA = seedNetease(f.db, f.dao, '专辑甲');
+      const idB = seedNetease(f.db, f.dao, '专辑乙', '周杰伦', { sourceId: 'ne-b' });
+      const waits: number[] = [];
+      const err503 = new UpstreamError(503, 'upstream_rate_limited', 'MusicBrainz 拒绝（超速）', 45);
+      const { client } = stubClient([err503, HIT('mbid-1'), err503, err503]);
+      const s = await calibrateRows(f.dao, listNeteaseRows(f.db), client, {
+        sleepFn: async (ms) => {
+          waits.push(ms);
+        }
+      });
+      assert.deepEqual(waits, [45000, 45000], '两次 503 各退避一次（Retry-After=45s）');
+      assert.equal(s.calibrated, 1, '甲行退避后重试成功');
+      assert.equal(s.failed, 1, '乙行二次 503 才计 failed');
+      assert.equal(albumOf(f.db, idA).release_year, 2001, '退避重试后合并生效');
+      assert.deepEqual(albumOf(f.db, idB).alias_sources, [], '乙行失败零写入');
     } finally {
       f.cleanup();
     }

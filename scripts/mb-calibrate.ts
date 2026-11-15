@@ -36,7 +36,7 @@ import { DAO } from '../src/server/db/dao';
 import type { Row } from '../src/server/db/sql';
 import { mapAlbum, type AlbumRow } from '../src/server/db/types';
 import { downloadCover } from '../src/server/metadata/covers';
-import { MusicBrainzClient, type AlbumCandidate } from '../src/server/metadata/musicbrainz';
+import { MusicBrainzClient, UpstreamError, type AlbumCandidate } from '../src/server/metadata/musicbrainz';
 import { MetadataRateLimiter } from '../src/server/metadata/queue';
 
 const FAILURE_CAP = 20;
@@ -106,6 +106,8 @@ export async function calibrateRows(
     onAlbumAdded?: (albumId: string, coverUrl: string | null) => void;
     /** 既有 genre chips 词汇（lower → canonical）：MB genres 归一查重沿用，防 chip 碎片 */
     existingGenres?: Map<string, string>;
+    /** 503 退避睡眠注入（测试快进；缺省真实 setTimeout） */
+    sleepFn?: (ms: number) => Promise<void>;
   } = {}
 ): Promise<CalibrateSummary> {
   const dryRun = opts.dryRun === true;
@@ -135,9 +137,23 @@ export async function calibrateRows(
     try {
       cand = await client.resolveReleaseByArtistAndTitle(row.artist, row.title);
     } catch (err) {
-      summary.failed++;
-      pushFailure(`${row.artist} - ${row.title}: ${String(err)}`);
-      continue;
+      // 503 退避重试一次（R-110 补记，2026-11-15 dry-run 实测 152 张级联 503 教训）：
+      // 尊重 Retry-After（缺省 60s、上限 120s）后原行重试一发；二次 503 才计 failed 移动
+      if (err instanceof UpstreamError && err.status === 503) {
+        const waitMs = Math.min((err.retryAfterS ?? 60) * 1000, 120_000);
+        await (opts.sleepFn ?? ((ms) => new Promise((r) => setTimeout(r, ms))))(waitMs);
+        try {
+          cand = await client.resolveReleaseByArtistAndTitle(row.artist, row.title);
+        } catch (err2) {
+          summary.failed++;
+          pushFailure(`${row.artist} - ${row.title}: ${String(err2)}（503 退避重试后仍失败）`);
+          continue;
+        }
+      } else {
+        summary.failed++;
+        pushFailure(`${row.artist} - ${row.title}: ${String(err)}`);
+        continue;
+      }
     }
     if (cand === null || cand.source_id === '') {
       summary.missed++;

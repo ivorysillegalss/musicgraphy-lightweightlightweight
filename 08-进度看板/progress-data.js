@@ -639,7 +639,7 @@ window.MG_PROGRESS = {
     {
       id: 'SPECIAL', short: '专项', status: 'in_progress', counted: true,
       title: '⑦ 专项主线 · 跨线专项工作包（同类型设计参考）',
-      subtitle: '专项型需求归口专区：跨线组合工作包（检索/呈现/规范联动），与其他主线同款「a-b-c-d 步骤链 + 需求卡表格」呈现——同类专项登记于此参考；2026-11-15 起兼收「设计参考」登记（外部站点设计原理 → 需求草案 R-106~R-109，卡 S2-4~S2-7）与实现原理拆解/0→1 分割候选卡（S2-8~S2-27）——第一批实现已上线（2026-11-15 用户实现令：/genres /crate /panorama /random 四入口，commit 0ab7a4d，check 229/229）',
+      subtitle: '专项型需求归口专区：跨线组合工作包（检索/呈现/规范联动），与其他主线同款「a-b-c-d 步骤链 + 需求卡表格」呈现——同类专项登记于此参考；2026-11-15 起兼收「设计参考」登记（外部站点设计原理 → 需求草案 R-106~R-109，卡 S2-4~S2-7）与实现原理拆解/0→1 分割候选卡（S2-8~S2-27）——第一批实现已上线（2026-11-15 用户实现令：/genres /crate /panorama /random 四入口，commit 0ab7a4d，check 229/229）；2026-11-15 设计参考第一批（Radiooooo）实施落地转正 = S2-28 done（地图模块 0→1 复现，DR-M0~M4/I1 六卡口径，commits 1fde125→950df06）',
       cards: [
         { id: 'S2-2', title: '第二阶段 · 搜索功能优化（专项一）', status: 'pending',
           desc: '用户 2026-11-15 指令「创建两个新的专项：搜索功能的优化和签单页面的显示」之一（签单页面经用户澄清 = 前端页面的动效显示 → S2-3）。现状锚点 = 本地四字段 LIKE 1–2ms 性能无忧（W4-6-2 perf-like 5000 行实测）/ search-box 双意图候选（你的档案 + 外部）/ R1 快照回放缓存（B4）/ 全局限流 30/min。专项范围开放（实施前评审定稿），候选方向：本地检索相关性（LIKE → 分词/加权）、候选排序与呈现、防抖与交互体验、零结果空态、跨源候选聚合体验。跨线专项（后端检索质量 + 前端呈现），载体卡挂 FRONTEND 线。需求事实源 = 草案文档「专项一 S-A」',
@@ -973,6 +973,18 @@ window.MG_PROGRESS = {
               { v: 'v3', date: '2026-11-15', note: '实现令执行披露：音频源合规评审未过，按卡面约定维持后置（pending）；S2-17 感官层开关已就位，音频层落地零新增开关面' },
   ],
           origin: '用户 2026-11-15 第二令建卡（R-109 分割 P4）' },
+        { id: 'S2-28', title: '设计参考第一批实施 · Radiooooo 地图模块 0→1 复现（DR-M0~M4/I1）', status: 'done',
+          desc: '用户 2026-11-15 两令落地：「新增这个的模拟实现…分成小卡片让 PM 排期分析」→ 07 包 03 号文档 §5 草案卡 14 张 + §5.5 PM 排期收敛（首期 6 卡 = DR-M0 契约先行 + G1/M1/M2/M3/M4 + I1 顺带；A 线音频只留插座，V1/G2/I3 后置）；「尽快收尾并将结果补充到看板当中」→ 实施转正登记。实施 = 编排会话四波子 Agent 串行派工（宿主单子 Agent 实测约束）+ 一次续派收尾：①DR-M0+G1 = 主线 1fde125（PlaybackPort/StylePort 引擎无关契约 + Null/Mock/Registry 三适配器 + scripts/build-geo-assets.ts 归一脚本 + NE 110m 自托管 GeoJSON 177 国 243KB，name_zh 100%，publicDir→dist/static/geo 字节一致验证）；②DR-M1 = 文档包 5db47b4 评审案-地理渲染引擎选型（四候选矩阵，推荐 MapLibre GL JS，License 实测 BSD-3-Clause，globe projection v5.0+ 内置核实——⚠️ 待用户追认）；③DR-M2+M3 = 主线 b180dd7（⚠️ 提交说明被并行会话 sweep 占用、内容完整，归属待澄清 = 7f95537 同族：maplibre-gl 6.18.0 落地 + globe-view 岛屿[CSS 变量运行时读 token 零硬编码色] + 五态 feature-state 表达式[playing/selected/hover=琥珀 accent，empty=近隐身] + DOM 标注规避 glyphs 自托管 + /atlas SSR 宿主页）；④DR-M4+I1 = 主线 27d9e46（相机 flyTo/白名单 hover/空态 toast；URL 即状态乙-1 = ?country&theme，国家 pushState/主题 replaceState + 300ms 防抖 + popstate 守卫对齐 filter-cabin 先例；availability.mock.json 28 键 = G2 真 API 替换点 fetchAvailability 唯一改动位置；红线审计测试零豁免）；⑤收尾 = 950df06（/atlas data-playback="mock" 一行，DoD 闭环）+ 文档包 76849cc（03 文档 v1.3 实施注记）。预留接口 DoD 已达 = 「换实现零改地图」（Null→Mock 仅 data-playback 属性差，渲染层 diff=0——未来接真音频只换 adapter）；walking-skeleton 六项验收链全闭环。R-106（Album Atlas/S2-4）机制同族，本卡 = 其实现拆分底稿（评审案衔接注记在档）。',
+          deps: [],
+          evidence: '【done 2026-11-15 · 全链可核查】主线仓提交台账 = 1fde125/b180dd7/27d9e46/950df06（工作树每笔收口时干净）；npm run check 全绿 199→231→257/257（tsc/eslint/vite build/node:test，Node v26.13.0 MSYS PATH 冻结口径）；运行时依赖 2→3（+maplibre-gl 6.18.0，IM-30 观察指标口径如实披露）；globe chunk 1,082,011B/gzip 294,152B 全懒加载（首屏 main.js 2.7KB 不变）；GeoJSON 243,411B 与 dist 拷贝 cmp 字节一致、177 要素、name_zh 177/177；/atlas HTTP 实测 = 登录态 200（岛根 data-island="globe-view" data-theme="light" data-playback="mock" 在档）、匿名 302（V10 守卫）、/static/geo/countries-110m.json 200、/static/geo/availability.mock.json 200（28 键全命中零死键）；红线审计测试断言 = globe-view/** 零 http(s)/mapbox/accessToken 字面量 + dependencies 恰 3 个锁死 + maplibre-gl import 全仓唯一；文档包提交 = 5db47b4（评审案）+ 76849cc（v1.3 注记）；评审案-地理渲染引擎选型.md 核查链接在档（MapLibre v5.0.0 release notes/quickstart/npm license 双源）',
+          updated: '2026-11-15',
+          confirmed: '2026-11-15',
+          brief: 'Radiooooo 地图模块 0→1 复现落地（契约插座 + MapLibre globe 岛屿 + /atlas，播放/样式接口已预留）。',
+          scope: ['SSR 页面', 'API 路由', '前端岛屿', '设计 tokens 与 CSS', '脚本与 CLI', '测试', '文档包'],
+          history: [
+            { v: 'v1', date: '2026-11-15', note: '用户令收尾登记：设计参考 03 §5.5 首期 6 卡四波子 Agent 实施完成置 done（待追认三件随卡：M1 引擎裁决/新依赖 maplibre-gl//atlas 挂载；b180dd7 sweep 归属待澄清）' },
+          ],
+          origin: '用户 2026-11-15 指令（「新增这个的模拟实现…让 PM 排期分析」+「尽快收尾并将结果补充到看板当中」）；设计/排期事实源 = 07-前端设计包/03-设计参考-Radiooooo-2026-11-15.md §5/§5.5（v1.3）；评审案 = 05-系统架构设计/评审案-地理渲染引擎选型.md（待追认）' },
       ],
     },
   ],
@@ -994,6 +1006,7 @@ window.MG_PROGRESS = {
   ],
 
   notes: [
+    { level: 'info', text: '2026-11-15 设计参考第一批实施转正（用户指令「尽快收尾并将结果补充到看板当中」）：07 包 03 号 Radiooooo 文档 §5.5 首期 6 卡（DR-M0 契约先行 + G1/M1/M2/M3/M4 + I1）四波子 Agent 串行派工实施落地，S2-28 建卡 done 入⑦专项主线专区 = 主线四笔 1fde125（端口契约+NE 110m GeoJSON 177 国自托管 243KB）/b180dd7（maplibre-gl 6.18.0 globe 岛屿+五态 feature-state+DOM 标注+/atlas 页；⚠️ 提交说明被并行会话 sweep 占用、归属待澄清 = 7f95537 同族）/27d9e46（URL 即状态+相机编排+红线审计零豁免）/950df06（mock 播放态接线 DoD 闭环）+ 文档包 5db47b4（引擎选型评审案，MapLibre GL JS 推荐待追认）+ 76849cc（v1.3 实施注记）；check 全绿 199→231→257/257（Node v26.13.0）；依赖 2→3 观察指标；globe chunk gzip 294KB 懒加载首屏不变；预留接口 DoD =「换实现零改地图」已复证（未来接真音频只换 adapter）；待追认三件 = M1 引擎裁决/maplibre-gl 入 deps//atlas 挂载（评审案 05 号在档）；WebGL 视觉验收留用户浏览器 /atlas。协议 §7⑧ 登记。' },
     { level: 'info', text: '2026-11-15 设计参考四站第一批实现收口（用户指令「现在都将他们并行开始实现吧 调度和执行的规则都交给你」）：S2-12~S2-26 非音频段 11 卡置 done = R-109 流派星图（/genres 纯 SSR 绝对定位标签 + db/genremap.ts 确定性力导向 + CLI 真库 42 节点 861 边）/ R-108 翻箱（/crate CSS 3D 侧脊 + crate-flip 键盘流 + /random 302 + /fragment/crate 续箱）/ R-106 收藏全景（/panorama Canvas LOD + db/panorama.ts decade×流派预计算 + /fragment/panorama-data 全表读豁免第二则 5185 节点 621KB 实测）/ R-107（页脚入口第一人称文案 + POST /settings/sensory 感官层开关）；评审案 = musicgraphy/docs/design-refs-review.md（Q1–Q11，Q1′ 披露 /atlas 被并行会话 DR globe 页占用故 R-106 改称 /panorama）；门禁 229/229 全绿；main.ts 注册行随并行会话收口顺延（同文件在制品披露）；音频段 S2-15/18/19/27 后置待音频源评审。' },
     { level: 'info', text: '2026-11-15 设计参考第二令：0→1 实现分割登记（用户指令「将这些需求分别都已实现原理角度进行需求分割 包括 分析他们的实现原理卡片 以及从0到1实现的需求分割 分别都计入这个专项 后期进行筛选」）：⑦专项主线专区新增 20 卡 = 实现原理分析卡四张 done（S2-8 Album Atlas® = SvelteKit+three InstancedMesh×21/WebGLRenderer×36/WebAudio，首屏 canvas=0 搜后初始化；S2-9 Chiara Luzzana = Webflow+locomotive-scroll+three 反应球+单一 mainSound.mp3 程序化编排、零 audio 元素；S2-10 cratedigger.js = 源码级（MIT）薄盒建模+四态 TWEEN 状态机（pushed/pulled/shown/flipped，Quartic.Out）+拖拽翻找+DoF 默认关；S2-11 Every Noise = 源页 3.5MB 纯 DOM 绝对定位（非 canvas）+服务端预计算坐标+内联 preview_url+scan() 扫听+Spotify API 关停维护态教训）+ 0→1 分割候选卡 16 张 pending（S2-12~S2-27，每站 P1→P2→P3→P4 串行 deps 链、跨站零耦合可并行；三个 P4 可选段 = 音频源合规评审后立项无源即砍；S2-25 SSR 星图 = everynoise 机制与本项目 SSR 哲学同构、实现成本最低段）。分割卡 = 筛选候选非排期承诺，后期用户筛选组合；事实源 = 需求草案-2026-11-15-设计参考第二批.md 第二部分（四站拆解+0→1 表）；协议 §7⑥ 登记；全板 48→68 卡（SPECIAL 线 6→26 卡）；本批零代码变更纯登记。' },
     { level: 'info', text: '2026-11-15 设计参考第二批登记（用户指令「将这几个网站都加入当前的看板中的设计参考内容 并且分别创建需求参考他的设计原理 和思路」）：四外部站点设计原理入⑦专项主线专区建卡四张 pending = S2-4 Album Atlas®（专辑空间漫游视图，R-106）/ S2-5 Chiara Luzzana（档案的声音身份与叙事，R-107）/ S2-6 cratedigger.js（翻箱 Crate Digging 浏览模式，R-108）/ S2-7 Every Noise at Once（我的流派星图，R-109）；每卡 = 设计参考分析 + 借鉴原理映射 + 草案方向 + 红线适配（零 CDN/URL 即状态/Topster=View 先例/LIMIT≤60/实施前评审案照出）；需求事实源 = 01-产品理念终稿/需求草案-2026-11-15-设计参考第二批.md（R-106~R-109，站点事实核查 2026-11-15 页面抓取 + repo README）；协议 §7⑤ 登记；全板 44→48 卡（SPECIAL 线 2→6 卡）；本批零代码变更纯登记。' },

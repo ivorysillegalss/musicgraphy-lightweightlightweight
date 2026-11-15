@@ -34,6 +34,7 @@ window.MG_DAILY_REPORTS = {
         { label: '日报页', value: '昨夜上线（deploymentId 2121337312370835456）；本条为第 2 篇' },
         { label: '发布后迭代', value: 'FRONTEND 线 +3 pending 卡（S2-1 Topster 描述页 / S2-2 搜索优化 / S2-3 前端动效专项，第二阶段）；需求草案 R-101~R-105 + 两专项登记（01-产品理念终稿/需求草案-2026-11-15）' },
         { label: '看板改版', value: 'a-b-c-d 步骤链 + 需求卡表格视图上线（44 卡 × confirmed/brief/scope/history 新四字段 + 并行度统计区）；增设「⑦ 专项主线」专区（S2-2/S2-3 归口，同类型设计参考）' },
+        { label: '设计参考转正', value: '看板 68→69 卡（S2-28 done）' },
       ],
 
       sections: [
@@ -156,6 +157,15 @@ window.MG_DAILY_REPORTS = {
             '边界披露：①main.ts 未入 0ab7a4d——并行会话同文件在制品含 globe-view 引用（其五件未提交），本提交带入即破构建；两岛屿文件已入库，注册行随并行会话收口顺延生效（loader 对未注册岛屿优雅跳过，SSR 完整可用）②app.css 捎带并行会话 globe 样式 hunk（惰性无害，归属其会话）③音频段 S2-15/18/19/27 按卡面约定维持后置（音频源合规评审未过，感官层开关已就位）④看板 12 卡置 done（evidence 全可核查）+ 音频 4 卡后置注记，全板 68 卡（SPECIAL done 16/pending 10）。',
           ],
         },
+        {
+          heading: '设计参考第一批实施 · Radiooooo 地图模块 0→1（补记 · 同日晚 · 用户指令）',
+          kind: 'list',
+          items: [
+            '①四波派工与提交台账：07 包 03 号 Radiooooo 文档 §5.5 首期 6 卡（DR-M0 契约先行 + G1/M1/M2/M3/M4 + I1）四波子 Agent 串行派工实施落地，S2-28 建卡 done 入⑦专项主线专区（SPECIAL 26→27 卡，全板 68→69）= 主线四笔 1fde125（端口契约 + NE 110m GeoJSON 177 国自托管 243KB）/ b180dd7（maplibre-gl 6.18.0 globe 岛屿 + 五态 feature-state + DOM 标注 + /atlas 页；⚠️ 提交说明被并行会话 sweep 占用、归属待澄清 = 7f95537 同族）/ 27d9e46（URL 即状态 + 相机编排 + 红线审计零豁免）/ 950df06（mock 播放态接线 DoD 闭环）+ 文档包 5db47b4（引擎选型评审案，MapLibre GL JS 推荐待追认）+ 76849cc（v1.3 实施注记）；check 全绿 199→231→257/257（Node v26.13.0）；依赖 2→3 观察指标；globe chunk gzip 294KB 懒加载首屏不变。',
+            '②预留接口 DoD =「换实现零改地图」已复证（Null→Mock 仅 data-playback 属性差，渲染层 diff=0，未来接真音频只换 adapter）；待追认三件 = M1 引擎裁决 / maplibre-gl 入 deps / /atlas 挂载（评审案 = 05-系统架构设计/评审案-地理渲染引擎选型.md 在档）；WebGL 视觉验收留用户浏览器 /atlas。协议 §7⑧ 登记。',
+            '③随本批提交并重部署线上：看板六件复制覆盖 stage 重建（禁 patch 旧 stage）+ ZCode Site CLI 部署（siteId 2120913580313718784），部署后线上 progress-data.js 应可检索 S2-28。',
+          ],
+        },
       ],
 
       evidence: [
@@ -168,6 +178,7 @@ window.MG_DAILY_REPORTS = {
         { label: '设计参考第二批', value: '需求草案 R-106~R-109（01-产品理念终稿/需求草案-2026-11-15-设计参考第二批.md 新建）+ SPECIAL 专区 S2-4~S2-7 pending（progress-data.js 全板 44→48 卡）；站点核查 = 页面抓取 + github.com/risq/cratedigger README；node --test tests/ 全绿；随本批提交并重部署线上' },
         { label: '0→1 分割登记', value: '原理分析卡 S2-8~S2-11（done，四站证据级拆解：cratedigger 源码级/everynoise 源页级/albumatlas·chiara 浏览器实测级）+ 分割候选卡 S2-12~S2-27（pending，每站 P1→P4 链，后期筛选）；全板 48→68 卡；事实源 = 需求草案第二批文档第二部分；协议 §7⑥；node --test tests/ 全绿；随本批提交并重部署线上' },
         { label: '四站实现收口', value: '主线 0ab7a4d（17 文件 +1665）：/genres /crate /panorama /random 四入口上线；check 229/229 全绿；测试 +17；CLI 真库 42 节点/861 边；IAB 目检三页全过；看板 12 卡 done + 音频 4 卡后置注记；main.ts 注册行随并行会话顺延（披露）；评审案 = musicgraphy/docs/design-refs-review.md' },
+        { label: 'S2-28 转正', value: '主线 1fde125/b180dd7/27d9e46/950df06 + 文档包 5db47b4/76849cc，check 257/257' },
       ],
     },
 

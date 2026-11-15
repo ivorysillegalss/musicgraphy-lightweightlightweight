@@ -1,6 +1,7 @@
 # 07-前端设计包 · README
 
-> v1.1 · 2026-11-12 · 角色：前端设计师 · 方法论：ui-ux-pro-max skill（v2.15.0）工作流
+> v1.2 · 2026-11-15 · 角色：前端设计师 · 方法论：ui-ux-pro-max skill（v2.15.0）工作流
+> （v1.2：新增 03-设计参考-Radiooooo 外部站点拆解档）
 
 ## 这是什么
 
@@ -41,6 +42,8 @@ Musicgraphy 2.0 的**设计侧交付包**：设计系统 PRD + 可双击评审�
 ├── 00-README.md                    本文件
 ├── 01-设计系统PRD.md                设计侧需求文档（主交付）
 ├── 02-前端实现拆分方案.md            分步实现 + F0 骨架契约 + F1–F4 子Agent prompt（实现事实源）
+├── 03-设计参考-Radiooooo-2026-11-15.md  外部站点技术拆解（音频管线/Canvas 可视化/Mapbox 地球展现——
+│                                       设计参考素材，非需求；实施引用须走评审案）
 ├── design-system/musicgraphy/
 │   ├── MASTER.md                   设计系统 Source of Truth（工具持久化 + 裁决校准）
 │   └── pages/                      页面级覆盖（collection / album-detail）

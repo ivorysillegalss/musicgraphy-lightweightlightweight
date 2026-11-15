@@ -69,10 +69,12 @@ Musicgraphy-2.0-文档包\
     ├── 实现决策记录.md         （2026-11-11 新增，W0 起持续追加）
     ├── 评审案-多用户并发与封面缓存.md （2026-11-14 新增，IM-22；已追认执行 = B4 卡 done 016c100）
     └── 评审案-网易云专辑导入器.md     （2026-11-14 新增，IM-23；已追认执行 = B5/B7 卡 done 7aa21af/ba24eb4）
-07-前端设计包\                        （14 份，设计层，ui-ux-pro-max 流程）
+07-前端设计包\                        （15 份，设计层，ui-ux-pro-max 流程）
 ├── 00-README.md
 ├── 01-设计系统PRD.md
 ├── 02-前端实现拆分方案.md            （2026-11-12 新增，实现事实源）
+├── 03-设计参考-Radiooooo-2026-11-15.md（2026-11-15 新增，外部站点技术拆解 =
+│                                       设计参考素材：音频管线/Canvas 可视化/Mapbox 地球；非需求非裁决）
 ├── design-system\musicgraphy\
 │   ├── MASTER.md
 │   └── pages\ (collection.md, album-detail.md)
@@ -211,6 +213,13 @@ Musicgraphy-2.0-文档包\
                  tokens+app.css/4 岛屿 stub，门禁全绿）+ F1–F4
                  四段自包含子 Agent 派工 prompt（串行 F2→F1→F4→F3）
                  + 契约变更登记表。
+  03-设计参考-Radiooooo-2026-11-15.md 外部站点技术拆解（真实 bundle
+                 逆向）：Radiooooo 音频渲染管线（双 audio 通道 + Web Audio
+                 调音台 + Canvas 示波器）与 Mapbox GL 地球展现整体实现
+                 （globe 投影 + 自托管 GeoJSON 分桶 + feature-state 五态
+                 染色 + 相机编排）；含对 R-103/专项二 S-B 的启示映射与
+                 乙-5 零 CDN 红线冲突披露。性质 = 设计参考素材（只读
+                 参照），非需求非裁决；实施引用须走评审案。
   MASTER.md      设计系统 Source of Truth（Style = Minimalism &
                  Swiss；配色 = 暖墨+琥珀注记于奶油纸面；三层字体栈
                  Playfair/Inter/JetBrains Mono；深色模式预案）。

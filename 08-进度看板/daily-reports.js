@@ -98,6 +98,15 @@ window.MG_DAILY_REPORTS = {
             '落点：FRONTEND 线建卡三张 pending（S2-1/S2-2/S2-3，第二阶段标注，线 done→in_progress）；R-102/R-104/R-105 登记草案未单独建卡；事实源 = 01-产品理念终稿/需求草案-2026-11-15-发布后迭代第一批.md；协议 §7 增卡特例第三则。本批零代码变更——纯需求登记；文档包本地提交（无 remote，远端备份待用户指定仓）；看板数据变更随本批重部署。',
           ],
         },
+        {
+          heading: '红线批注裁决（补记 · 同日晚 · 用户逐条批注）',
+          kind: 'list',
+          items: [
+            '用户对 agent 列出的红线清单批注「甲组全取消；乙组取消乙-2、乙-9」：**废止 11 条** = G1 运行时依赖≤2 / 无 JS 基线·SSR 岛屿（ADR-003）/ IM-19 htmx 不引入 / 内存五纪律之无 hydration / IM-14 CSS 20KB / 首屏 JS 预算 / G2 RSS<100MB / 三不动之 app.ts 挂载结构 / 单用户产品边界 / DAO<200 行 / UI 不建页面清单——相关数值全部转观察指标（看板 G1/G2/G3 卡 title+evidence 已改写，watch 维持）。',
+            '**锁死维持 9 条** = DD3 URL 即状态 / G4 check 全绿（182/182 顺延）/ 上游限流纪律 / 隐私红线+资产自托管零 CDN（React 一律构建进 dist）/ hono/html 禁 raw 插用户数据 / Topster=Collection View / 迁移框架+VACUUM INTO 备份 / 内存四纪律（LIMIT≤60/封面流式/禁base64/stmt缓存）/ 发布红线（发布动作归用户亲手）。',
+            '落点 = IM-30（05/实现决策记录.md §18 只增不改）+ 00-硬约束 v1.3（硬约束 5 修订）+ 主线 AGENTS.md §1 + 根 AGENTS.md §1 裁决注记 + 需求草案「红线批注记录」节。废止 ≠ 实施：发布后迭代仍草案态，逐项实施前评审案照出；dao/interface.ts 契约与 db.ts PRAGMA 基线仍受保护。',
+          ],
+        },
       ],
 
       evidence: [

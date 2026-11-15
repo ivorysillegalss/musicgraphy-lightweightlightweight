@@ -77,6 +77,38 @@ test('看板：deps 前置依赖引用完整性', () => {
   }
 });
 
+const SCOPE_VOCAB = new Set([
+  '工程规范与骨架', '存储与迁移', '鉴权与会话', 'API 路由', '元数据与外部源',
+  '封面管线', '备份与恢复', '导出与重建', 'SSR 页面', '前端岛屿',
+  '设计 tokens 与 CSS', '仪表与埋点', '脚本与 CLI', '测试', '文档包', '看板与部署',
+]);
+
+test('看板：需求卡表格字段完整性（2026-11-15 展现改版 §7④）', () => {
+  let n = 0;
+  for (const tr of D.tracks) {
+    for (const c of tr.cards) {
+      n++;
+      assert.ok(c.brief && c.brief.length > 0, `卡 brief 简要描述非空 (${c.id})`);
+      assert.ok(c.desc && c.desc.length > 5, `卡 desc 详细描述非空 (${c.id})`);
+      assert.ok(DATE_RE.test(c.confirmed || ''), `卡 confirmed 需求确认日期格式 (${c.id}: ${c.confirmed})`);
+      assert.ok(Array.isArray(c.scope) && c.scope.length >= 1, `卡 scope 涉及范围非空 (${c.id})`);
+      for (const s of c.scope) {
+        assert.ok(SCOPE_VOCAB.has(s), `卡 scope 标签在固定词表内 (${c.id}: ${s})`);
+      }
+      assert.ok(Array.isArray(c.history) && c.history.length >= 1, `卡 history 更新历史非空 (${c.id})`);
+      for (const h of c.history) {
+        assert.ok(/^v\d+$/.test(h.v || ''), `history.v 版本号 (${c.id})`);
+        assert.ok(DATE_RE.test(h.date || ''), `history.date 格式 (${c.id})`);
+        assert.ok(h.note && h.note.length > 0, `history.note 非空 (${c.id})`);
+      }
+    }
+  }
+  assert.ok(n >= 44, `全板卡片数 >= 44（实数 ${n}）`);
+  const special = D.tracks.find((t) => t.id === 'SPECIAL');
+  assert.ok(special && special.cards.some((c) => c.id === 'S2-2') && special.cards.some((c) => c.id === 'S2-3'),
+    '⑦ 专项主线专区在档且 S2-2/S2-3 已移入（2026-11-15 用户令）');
+});
+
 test('看板：relations 与 notes 完整', () => {
   assert.ok(Array.isArray(D.relations) && D.relations.length >= 6, 'relations >= 6 条');
   for (const r of D.relations) {

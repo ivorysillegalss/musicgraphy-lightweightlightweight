@@ -33,6 +33,7 @@ window.MG_DAILY_REPORTS = {
         { label: '门禁', value: 'npm run check 173/173（HEAD ba24eb4；今日零代码变更，无需复跑）' },
         { label: '日报页', value: '昨夜上线（deploymentId 2121337312370835456）；本条为第 2 篇' },
         { label: '发布后迭代', value: 'FRONTEND 线 +3 pending 卡（S2-1 Topster 描述页 / S2-2 搜索优化 / S2-3 前端动效专项，第二阶段）；需求草案 R-101~R-105 + 两专项登记（01-产品理念终稿/需求草案-2026-11-15）' },
+        { label: '看板改版', value: 'a-b-c-d 步骤链 + 需求卡表格视图上线（44 卡 × confirmed/brief/scope/history 新四字段 + 并行度统计区）；增设「⑦ 专项主线」专区（S2-2/S2-3 归口，同类型设计参考）' },
       ],
 
       sections: [
@@ -107,6 +108,16 @@ window.MG_DAILY_REPORTS = {
             '落点 = IM-30（05/实现决策记录.md §18 只增不改）+ 00-硬约束 v1.3（硬约束 5 修订）+ 主线 AGENTS.md §1 + 根 AGENTS.md §1 裁决注记 + 需求草案「红线批注记录」节。废止 ≠ 实施：发布后迭代仍草案态，逐项实施前评审案照出；dao/interface.ts 契约与 db.ts PRAGMA 基线仍受保护。',
           ],
         },
+        {
+          heading: '看板展现改版 + 专项专区（补记 · 同日晚 · 用户令）',
+          kind: 'list',
+          items: [
+            '用户令①「每一个卡片均按照 a-b-c-d 这样的主线脉络进行全规整…每个卡片都应该按照表格的形式类似：需求确认日期/更新历史/需求内容/需求涉及范围（并行度统计）/需求状态/需求所属专项…在输入中需要包含详细描述和简要描述」：app.js 重写为步骤链表格渲染器——各主线内卡片串成步骤链（步标 a/b/c/d… = 主线内依赖序），每卡统一表格呈现（所属专项/需求状态/需求确认日期/需求内容=简要+详细/更新历史/涉及范围/前置依赖/证据/卡源·备注）；新增「需求并行度统计」区（scope 域标签 → 共享卡列表，同域互斥须串行、全异域可并行）；新表格 CSS 由 app.js 注入（index.html 展示壳未动）。',
+            '数据层：全板 44 卡逐卡新增 confirmed（需求确认日期）/ brief（简要一句话）/ scope（涉及范围域标签）/ history（更新历史）四类字段——纯增量，既有字段与证据一字未删；缺 desc 的 11 卡（W0-1~W0-5/W1-0/W0-6/G1–G4）回填详细描述；确认日期按「需求成文日」口径回填（PM 排期 2026-11-11 / 拆分方案 2026-11-12·13 / 派工·裁决令当日 / 披露发生日），口径登记协议 §7④。',
+            '用户令②「新增一个专项部分 作为同类型的设计参考」：增设「⑦ 专项主线」专区（SPECIAL，counted=true）——S2-2/S2-3 两张专项卡自 FRONTEND 线移入归口（history 补移入注记），S2-1 留守 FRONTEND；专区与其他主线同款「步骤链 + 需求卡表格」渲染 = 同类型设计参考。',
+            '范围词表 16 域固化于测试断言（工程规范与骨架/存储与迁移/鉴权与会话/API 路由/元数据与外部源/封面管线/备份与恢复/导出与重建/SSR 页面/前端岛屿/设计 tokens 与 CSS/仪表与埋点/脚本与 CLI/测试/文档包/看板与部署）；全板 44 卡四字段零遗漏自检 ok；node --test tests/ 11 项全绿（新增字段完整性断言）。',
+          ],
+        },
       ],
 
       evidence: [
@@ -115,6 +126,7 @@ window.MG_DAILY_REPORTS = {
         { label: '事实源', value: '剩余工作明细与全部 hash/路径/数字 = progress-data.js 各卡 evidence + 02-变现文档包/08·09·10·11·12' },
         { label: '补记证据', value: '主线 c9e1692（D1）/ 3378964 + b3ff02c（D4）/ dae9ae0（B9 埋点，16 files +442/-34）/ 824c72f（P1-4 评审案）；评审案 = musicgraphy/docs/telemetry-review.md + palette-review.md；IM-27/28/29；check 182/182' },
         { label: 'release 基线', value: 'origin = github.com/ivorysillegalss/musicgraphy-lightweightlightweight（空仓首推 main→main 新建分支；单拼名 musicgraphy-lightweight ls-remote 核实不存在）；基线 dae9ae0；门禁复跑 7×182/182（首跑 1 间歇未复现）；tracked 敏感排查零命中' },
+        { label: '看板改版证据', value: 'node --test tests/ 11 项全绿（+字段完整性断言 + scope 词表 16 域）；语法自检 ok（tracks=7 / cards=44）；六件变更 = app.js / progress-data.js / 看板更新协议.md / 00-文件目录说明.txt / tests/docpackage.test.mjs / daily-reports.js；随本批提交并重部署线上' },
       ],
     },
 

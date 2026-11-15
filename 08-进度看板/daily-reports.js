@@ -175,6 +175,18 @@ window.MG_DAILY_REPORTS = {
             '门禁 npm run check 全绿 263/263（= 基线 257+本批 6）；测试 preview.smoke 6 项（fail-soft 404/缓存直读流式 AUDIOBYTES 透传/record_not_found/守卫 302/preload=none 断言/data-sample 内联）；依赖 3 不变（本批零新增）；看板 SPECIAL done 21/pending 6（全板 70 卡）——四站 0→1 全部 16 张实现卡 done（第一批 12 + 第二批 4）。收口三步 = node --test 11/11 → 文档包提交 → 重部署线上。',
           ],
         },
+        {
+          heading: '发布后迭代第三批实现收口（补记 · 同日晚 · 用户实现令）',
+          kind: 'list',
+          items: [
+            '用户实现令（第三批派工单）：R-101/R-102/R-104/R-105 四件 + S2-1 与三项待建卡。评审案 = musicgraphy/docs/iteration-batch3-review.md（Q1–Q8 决策留档；R-103 React 接入不在本批）。主线 commit d8653d0（11 文件 +439/-20）。',
+            'R-101 Topster 内容描述页（S2-1 done）：GET /topsters/about 独立说明页（是什么 = View 顺序即叙事 / 怎么建三步 / 分享口径 = 04B 引擎一「分享的是作品图，不是产品」+ SVG/海报页诚实边界）+ 全站页脚入口行「把品味排成一张图：Topster 是什么 · 我的策展」——闭环全站入口普查「四页 0 处入口」缺口；路由注册在 /topsters/:id 之前防动态段捕获。',
+            'R-102 登录用户信息呈现（S2-29 done）：页脚登录态行「已解锁 · Musicgraphy」+ POST /logout（auth.ts 最小增量：sameOrigin + deleteCookie + 303 /login，注册于 use(\'/*\') 守卫之后 = 匿名 POST 先被守卫 302）；无状态会话清 cookie 即完整退出（实测 Set-Cookie mg_session=; Max-Age=0）；多用户概念不引入；偏差披露 = 会话剩余期不呈现（layout 无 Context，评审案 Q2 留档）。',
+            'R-104 封面墙下拉限制（S2-30 done）：a+b 组合——岛屿 autoLeft=3 自动追加配额（240 张后转手动「加载更多（手动）」，IO 停、点击续页；MutationObserver 识别舱岛换墙重置配额）+ has_next=false SSR .wall-end 到底条 + #mg-top 原生回顶锚点（零 JS）；cursor 服务端顺链/LIMIT 60 零改动。',
+            'R-105 Genre·年份筛选呈现改版（S2-31 done）：原生 <details> 轴收纳——Genre 恒展开 / 年份·听期缺省收起+激活时置 open；chips=<a> 与轴排除语义零改动（DD3 零新参数；「年份区间选择」候选否决 = 需新参数破 URL 即状态）；Favorite/Tag/颜色维持平铺。',
+            '门禁 npm run check 全绿 273/273（= 基线 263+本批 10；首跑 concurrency-covers CoverGate 一例 Windows 计时竞态 flake 与本批无关，单文件复跑 10/10 + 全量重跑证实）；真库 curl+IAB 实测：about 页三段渲染、q=deluxe 16 张 + wall-end 到底条、舱 Genre(–)/年份·听期(+)、logout 303/403/302 三态、页脚全行在档。全板 70→73 卡（FRONTEND 线 +3 新卡 done）。',
+          ],
+        },
       ],
 
       evidence: [
@@ -189,6 +201,7 @@ window.MG_DAILY_REPORTS = {
         { label: '四站实现收口', value: '主线 0ab7a4d（17 文件 +1665）：/genres /crate /panorama /random 四入口上线；check 229/229 全绿；测试 +17；CLI 真库 42 节点/861 边；IAB 目检三页全过；看板 12 卡 done + 音频 4 卡后置注记；main.ts 注册行随并行会话顺延（披露）；评审案 = musicgraphy/docs/design-refs-review.md' },
         { label: 'S2-28 转正', value: '主线 1fde125/b180dd7/27d9e46/950df06 + 文档包 5db47b4/76849cc，check 257/257' },
         { label: '音频批收口', value: '主线 3532749（15 文件 +543/-27）已推 origin：/album/:id/preview 同源代理流式 + 详情试听（preload=none）+ audio-viz/genre-scan 两岛屿 + panorama P 键；评审案 Q12–Q14；check 263/263；测试 +6；依赖 3 不变；看板 SPECIAL done 21/pending 6' },
+        { label: '第三批实现收口', value: '主线 d8653d0（11 文件 +439/-20）：R-101 /topsters/about + 页脚入口 / R-102 页脚登录态 + POST /logout / R-104 a+b 下拉限制（wall-end + autoLeft=3）/ R-105 details 轴收纳；评审案 docs/iteration-batch3-review.md；check 273/273（+10）；真库 curl+IAB 实测四件全过；看板 S2-1 done + S2-29/30/31 建卡 done（全板 73 卡）' },
       ],
     },
 

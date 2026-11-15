@@ -32,6 +32,7 @@ window.MG_DAILY_REPORTS = {
         { label: '主线态势', value: 'DESIGN ✓ / CRAWL ✓ / BACKEND ✓ / FRONTEND ✓ / SHIP（agent 面 ✓，发布待用户）/ OPS watch' },
         { label: '门禁', value: 'npm run check 173/173（HEAD ba24eb4；今日零代码变更，无需复跑）' },
         { label: '日报页', value: '昨夜上线（deploymentId 2121337312370835456）；本条为第 2 篇' },
+        { label: '发布后迭代', value: 'FRONTEND 线 +3 pending 卡（S2-1 Topster 描述页 / S2-2 搜索优化 / S2-3 前端动效专项，第二阶段）；需求草案 R-101~R-105 + 两专项登记（01-产品理念终稿/需求草案-2026-11-15）' },
       ],
 
       sections: [
@@ -86,6 +87,15 @@ window.MG_DAILY_REPORTS = {
             '主线仓 main → 远程首推 https://github.com/ivorysillegalss/musicgraphy-lightweightlightweight（用户指定仓；origin 已配置并 set-upstream 跟踪）。第一阶段 release 基线 = dae9ae0（与上行「收口后基线」同 commit，以现在内容为基准零新增改动）。',
             '推送前核查：未提交在制品 = 零（此前 WIP 已随 D1-D4/W8-9 收口入库）；tracked 敏感排查零命中（.gitignore 护住 data//.env/node_modules/dist/tools；.env.example 仅为 change-me 占位）；目标仓推送前 ls-remote 核实为空仓（单拼名 musicgraphy-lightweight 经核实不存在）。',
             '发布基线门禁复跑（推送后本机）：tsc/eslint/vite build 全绿 + test 182/182——本日共 8 跑：首跑 1 例失败未复现且名称未捕获，其后连续 7 轮 182/182 全绿，判间歇性时序敏感用例（与踩坑备忘 boot 备份竞态同族），不影响基线放行；后续复现时捕获名称另登记。',
+          ],
+        },
+        {
+          heading: '发布后迭代需求第一批（补记 · 同日晚 · 用户指令）',
+          kind: 'list',
+          items: [
+            '用户令「先将这些内容都写入需求当中…所有的修改都需要执行完后上传 git 包括这里的需求草案」。五项需求：R-101 Topster 内容描述页面 / R-102 登录用户信息呈现（现全站无登录态标识）/ R-103 动效框架接入 React（用户确认裁决；G1「运行时依赖 ≤2」与「无 JS 基线」ADR-003/IM-19 红线影响已披露，实施须评审案 + 口径修订）/ R-104 封面墙下拉限制（现 FR-5 无止境瀑布流）/ R-105 Genre·年份筛选呈现改版。',
+            '追加两专项（用户澄清：「签单页面的显示」= 前端页面的动效显示）：专项一 = 搜索功能优化（跨线：后端检索质量 + 前端呈现）；专项二 = 前端页面动效显示（与 R-103 合并执行路径：范围清单 → 接线形态评审案 → G1/G2 口径修订 → 分阶段迁移）。',
+            '落点：FRONTEND 线建卡三张 pending（S2-1/S2-2/S2-3，第二阶段标注，线 done→in_progress）；R-102/R-104/R-105 登记草案未单独建卡；事实源 = 01-产品理念终稿/需求草案-2026-11-15-发布后迭代第一批.md；协议 §7 增卡特例第三则。本批零代码变更——纯需求登记；文档包本地提交（无 remote，远端备份待用户指定仓）；看板数据变更随本批重部署。',
           ],
         },
       ],

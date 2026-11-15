@@ -18,8 +18,12 @@
   ~~运行时依赖 = 2~~ / ~~SSR 岛屿（无 JS 基线）~~ / ~~RSS < 100MB~~ / ~~DAO < 200 行~~
   已废止（数值转观察指标；IM-14 CSS 预算、首屏 JS 预算、IM-19、无 hydration、
   UI 不建页面清单同批废止）。
-- **主线仓已上 GitHub**：origin = `github.com/ivorysillegalss/musicgraphy-lightweightlightweight`；
-  HEAD `d8653d0`（2026-11-15 21:30）已推远端并经 ls-remote 验证一致。
+- **GitHub 双分支结构**（2026-11-15 晚建立）：origin =
+  `github.com/ivorysillegalss/musicgraphy-lightweightlightweight`；
+  `main` = 主线代码仓（HEAD `d8653d0`，已推并经 ls-remote 验证一致）；
+  `workspace-context` = 文档包全量历史 + AGENTS×3 副本 + tools ps1 +
+  RESTORE.md 重建指引——新工作环境 clone 同仓 checkout 两分支即可还原完整开发
+  上下文（见分支内 workspace-context/RESTORE.md）。
 - **看板线上镜像**：<https://musicgraphy-progress-ohqn.zai-ai.site>（公开无密钥，已接受；
   2026-11-15 晚核验 = progress-data.js / daily-reports.js 线上与本地 SHA256 逐字节一致）。
 - **归档工作区参考路径**（2026-11-13 快照）：
@@ -110,9 +114,11 @@
 ## 5. 运维程序
 
 - **文档包 git 仓**（2026-11-14 用户新建）：`Musicgraphy-2.0-文档包/` = 独立 git 仓
-  （分支 main，无远端；提交身份 `agent@musicgraphy.local`）。**收口三步 = node --test tests/
-  （11 项，cwd = 文档包根，零依赖）全绿 → git 提交（message 带卡片号，只 add 本次变更文件）
-  → 看板数据变更时线上重部署**；测试红或未提交 = 未交付；`/.zcode/` 已 ignore。
+  （分支 main；origin = 同 GitHub 仓——文档包历史以 `workspace-context` 分支随行推送，
+  main 分支名被主线代码占用；提交身份 `agent@musicgraphy.local`）。**收口三步 =
+  node --test tests/（11 项，cwd = 文档包根，零依赖）全绿 → git 提交（message 带卡片号，
+  只 add 本次变更文件）→ 看板数据变更时线上重部署**；测试红或未提交 = 未交付；
+  `/.zcode/` 已 ignore。
 - **文档包 zip（2026-11-14 起降级）**：仅**用户显式要求**时执行，工作区根
   `powershell -ExecutionPolicy Bypass -File tools/rezip-docpackage.ps1`；默认收口不做。
 - **工作区全量归档**：`powershell -ExecutionPolicy Bypass -File tools/rezip-workspace.ps1`。
@@ -184,8 +190,10 @@
   行为类四仪表已实算（IM-28）；IM 记录至 IM-33。
 - **执行序**：实现面 pending 仅 6 卡（S2-2 / S2-3 / S2-4~S2-7），均待用户排期/筛选；
   S2-3 承接 R-103。余 = 用户发布链路 + 决策门 + DR-M1 三件追认。
-- **主线仓远端**：origin = `https://github.com/ivorysillegalss/musicgraphy-lightweightlightweight`，
-  d8653d0 已推并验证一致；文档包仓无远端（本地仓，非缺口）。
+- **远端同步实况**：origin = `https://github.com/ivorysillegalss/musicgraphy-lightweightlightweight`——
+  `main` = d8653d0（代码）；`workspace-context` = 文档包全量 + AGENTS×3 +
+  tools + RESTORE.md（随行分支，每次文档包收口后按 RESTORE.md §5 快进同步），
+  两分支均已推并经 ls-remote 验证一致；文档包本地仓已加同名 origin。
 
 ## 8. 待用户裁决清单（agent 只能备案评审案，不能自决；2026-11-15 晚复核）
 

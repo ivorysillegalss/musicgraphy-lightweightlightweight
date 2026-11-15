@@ -144,7 +144,9 @@ describe('六仪表页（GET /metrics · 匿名化可关闭）', () => {
     assert.match(setCookie, /mg_metrics=closed/);
     assert.match(setCookie, /Max-Age=7948800/); // 92 天 = 季度级节律
     const metricsCookie = /mg_metrics=[^;]*/.exec(setCookie)?.[0] ?? '';
-    const closedHtml = await (await get('/metrics', { cookie: metricsCookie })).text();
+    // D1 修复（use('/*')）后页面需有效会话：closed 态 = 会话 + mg_metrics 双 cookie 并带
+    // （原写法整体替换掉会话 cookie，依赖「页面匿名可达」的 D1 缺口才通过——随修复纠正）
+    const closedHtml = await (await get('/metrics', { cookie: `${cookie}; ${metricsCookie}` })).text();
     assert.ok(closedHtml.includes('观察池仪表已关闭'));
     assert.ok(!closedHtml.includes('线索覆盖率')); // 关闭 = 隐藏数字呈现
     assert.ok(closedHtml.includes('重新打开'));

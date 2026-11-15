@@ -108,8 +108,22 @@ export function installAuth(app: Hono, cfg: Config): void {
     return c.redirect('/', 303);
   });
 
-  // 页面守卫：无有效 cookie → 302 登录页
-  app.use('/', async (c, next) => {
+  // 页面守卫：无有效 cookie → 302 登录页（D1 修复 2026-11-15，用户裁决令：use('/*') 全路径拦截。
+  // 原 use('/') 按 Hono 语义仅匹配根路径，/metrics /album/:id /topsters 等页面匿名可达 = V10
+  // 「页面 302」规格偏差（登记于文档包 02-变现文档包 12-技术债与依赖复盘 §2.1 D1）。
+  // 排除：/login（登录页本体）、/api（交下方 API 守卫保持 401 语义）、/static /covers
+  // （公开拓扑 = app.ts V8 注记，与修复前公开性一致——原守卫本就不拦）。
+  app.use('/*', async (c, next) => {
+    const path = c.req.path;
+    if (
+      path === '/login' ||
+      path.startsWith('/api/') ||
+      path.startsWith('/static/') ||
+      path === '/covers' ||
+      path.startsWith('/covers/')
+    ) {
+      return next();
+    }
     if (!isAuthed(c, cfg)) return c.redirect('/login', 302);
     await next();
   });

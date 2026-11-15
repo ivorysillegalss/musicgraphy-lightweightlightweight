@@ -18,7 +18,7 @@
  * - 页面 handler 内自捕获异常转 HTML 三态（漏抛会进 app.onError 变 JSON envelope）；
  * - 回响/联想是"馈赠"：失败静默降级为不渲染（P1-1 四约束）；
  * - 列表分页 LIMIT 60 + cursor（ADR-005 内存纪律①）；封面流式（禁 base64/整读）；
- * - POST 一律 sameOrigin 校验（V10 CSRF；鉴权由 installAuth 的 use('/') 守卫承担）。
+ * - POST 一律 sameOrigin 校验（V10 CSRF；鉴权由 installAuth 的 use('/*') 页面守卫承担，D1 修复 2026-11-15）。
  */
 import { Hono } from 'hono';
 import type { Context } from 'hono';

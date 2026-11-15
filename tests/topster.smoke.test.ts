@@ -233,15 +233,21 @@ describe('Topster 页面通道（无 JS 基线 · POST+303）', () => {
     assert.equal(delAgain.status, 303);
   });
 
-  test('守卫：页面匿名可达性与 /metrics 同口径（披露：installAuth use(\'/\') 仅拦根路径，/metrics 等页面匿名可达为既有行为，修复须评审 auth.ts 域文件）；跨站 Origin（CSRF）403', async () => {
-    const anonTop = await app.request('/topsters', { redirect: 'manual' });
-    const anonMetrics = await app.request('/metrics', { redirect: 'manual' });
-    assert.equal(anonTop.status, anonMetrics.status); // 与既有页面守卫口径一致（本卡不单独放水也不单独收紧——缺口披露见测试名）
-    // V10 sameOrigin：Origin/Sec-Fetch-Site 双缺 = 非浏览器放行（密钥即凭据）；跨站 Origin 必须 403
+  test('守卫（D1 修复后口径）：匿名页面 302 /login + 带会话跨站 Origin（CSRF）403 + 匿名 POST 302（守卫先于 CSRF）', async () => {
+    // D1 修复（用户 2026-11-15 裁决令）：installAuth use('/*') 全路径拦截，匿名页面一律 302 /login——
+    // 原「与 /metrics 同口径匿名可达」固化现状口径随修复作废（12-技术债与依赖复盘 §2.1 D1）
+    for (const p of ['/topsters', '/metrics']) {
+      const anon = await app.request(p, { redirect: 'manual' });
+      assert.equal(anon.status, 302);
+      assert.match(anon.headers.get('location') ?? '', /^\/login/);
+    }
+    // V10 sameOrigin：Origin/Sec-Fetch-Site 双缺 = 非浏览器放行（密钥即凭据）；带会话跨站 Origin 必须 403
     const csrf = await app.request(`/topsters/${topsterId}/move`, { method: 'POST', headers: { cookie, 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://evil.example' }, body: 'record_id=x&dir=up', redirect: 'manual' });
     assert.equal(csrf.status, 403);
+    // 匿名 POST：页面守卫先于路由/CSRF 执行 → 302 /login（无凭据谈不上 CSRF，CSRF 语义由上行带会话断言）
     const anonCsrf = await app.request('/topsters/delete', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Origin: 'http://evil.example' }, body: 'topster_id=x', redirect: 'manual' });
-    assert.equal(anonCsrf.status, 403);
+    assert.equal(anonCsrf.status, 302);
+    assert.match(anonCsrf.headers.get('location') ?? '', /^\/login/);
   });
 
   test('失效引用渲染：成员记录删除后策展页如实显示「N 处引用已失效」', async () => {

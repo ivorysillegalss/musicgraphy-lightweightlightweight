@@ -134,6 +134,7 @@ window.MG_DAILY_REPORTS = {
             '全链路打通：CLI fail-soft（未配置 exit 2）→ api-enhanced 网关 Node 直跑 3001（本机无 Docker；ivorysillegalss/api-enhanced，eapi 直连网易无需代理）→ QR 扫码登录（四轮全成功，MUSIC_R_T 令牌）→ 带登录态拉收藏 → preview 零写入。',
             '**暴露并修复两处真网关盲区**（B5 的 18 项测试全为假网关注入故未复现）：① Cookie 未附加（callApi 只发 Accept，数据调用恒 code 301）→ 主线 6fa23bb 改经 Cookie 请求头传递；② 字段形状错配（真实条目 = artists 数组 + subTime，无 artist 对象/artistName/publishTime）→ shape dump 定形后主线 060f807 修 mapAlbumItem 艺术家链 + 收藏时间双兼容。回归测试 +2，check 184/184，已推 origin。',
             '终态：**188 张收藏完整拉回、Unknown Artist = 0**（王菲/陈绮贞/陶喆/Prince/Pink Floyd/The Cure/青葉市子/放課後ティータイム 中英日全对）、preview 新 185 / 已有 3（dedupKey 实证命中）、零写入。披露：修复前同接口曾拉 2032 张（全 Unknown）——两次会话上游集合规模不同，正式导入后人工抽查。IM-31；正式导入（写库 + 封面下载）待用户点头。',
+            '**正式导入已执行（用户令「导入」· 第五次扫码）**：summary fetched=188 / new=185 / exists=7 / **imported=181** / failed=0（净差 4 = upsert 身份归并如实语义）→ collection_record 5041→5222；netease 新行 170 + 11 张归并已有行。**再修两处封面管线缺口（IM-32）**：① image/jpg 非标准 Content-Type 全量被拒 → 主线 50b70f6 白名单放行；② R4 回填驱动接线缺失（downloadBackfill 原语无驱动循环）→ 主线 2b2df36 补 metadata/cover-backfill.ts（boot 15s 首扫 + 每 10min 重扫，空闲门注入交互优先）+ 回归 +2；封面回填运行实证自动补齐中（34/170 起步，~11s/张，门禁注记 = 并行会话 globe 在制品挡全量 typecheck，作用域验证 + 全量复核后置）。主线四笔 6fa23bb/060f807/50b70f6/2b2df36 已推 origin。',
           ],
         },
         {

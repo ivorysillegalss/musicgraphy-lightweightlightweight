@@ -142,6 +142,24 @@ describe('B5 网易云导入器（IM-23）', () => {
   });
 
   // ---------------------------------------------------------------- 两导入源
+  test('带登录态调用必须携带 Cookie 头（2026-11-15 真网关连通性实测回归：cookie 此前在 callApi 未附加 → /album/sublist 恒 301）', async () => {
+    const seen: { url: string; cookie: string | null }[] = [];
+    const fetchFn = (async (input: unknown, init?: RequestInit) => {
+      const h = new Headers(init?.headers);
+      seen.push({ url: String(input), cookie: h.get('Cookie') ?? h.get('cookie') });
+      return new Response(JSON.stringify({ code: 200, data: { count: 0, data: [] } }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }) as typeof fetch;
+    const cookie = 'MUSIC_U=t';
+    for await (const _ of iterSavedAlbums({ baseUrl: 'http://gw', cookie, fetchFn })) break;
+    assert.ok(seen.length > 0 && seen.every((s) => s.cookie === cookie), `saved 调用必须全部携带 Cookie 头（实际 ${JSON.stringify(seen.map((s) => s.cookie))}）`);
+    seen.length = 0;
+    await fetchPlaylistAlbums({ baseUrl: 'http://gw', cookie, playlistId: '123', fetchFn });
+    assert.ok(seen.length > 0 && seen.every((s) => s.cookie === cookie), `playlist 调用必须全部携带 Cookie 头（实际 ${JSON.stringify(seen.map((s) => s.cookie))}）`);
+  });
+
   test('iterSavedAlbums 分页拼装：limit=100&offset 步进、页间 sleep 1000（≥1s 纪律）、流式产出', async () => {
     const { fetchFn, calls } = fakeGateway({
       '/album/sublist': (url: string) => {

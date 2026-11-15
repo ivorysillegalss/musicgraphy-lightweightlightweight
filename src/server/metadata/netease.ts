@@ -76,10 +76,14 @@ interface ApiBody {
 }
 
 /** GET 透传到 api-enhanced：超时 + UA + JSON 容错（非 JSON → NeteaseError） */
-async function callApi(url: string, fetchFn: typeof fetch, timeoutMs: number): Promise<{ status: number; body: ApiBody }> {
+async function callApi(url: string, fetchFn: typeof fetch, timeoutMs: number, cookie?: string): Promise<{ status: number; body: ApiBody }> {
   let res: Response;
   try {
-    res = await fetchFn(url, { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(timeoutMs) });
+    // 登录态经 Cookie 请求头传递（不用 ?cookie= 查询参数——网关请求行日志会记 query，
+    // header 不落日志 = Q3 cookie 脱敏纪律的延伸；2026-11-15 真网关连通性实测回归修复）
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (cookie !== undefined && cookie !== '') headers.Cookie = cookie;
+    res = await fetchFn(url, { headers, signal: AbortSignal.timeout(timeoutMs) });
   } catch (err) {
     throw new NeteaseError(0, `netease-api 不可达：${String(err)}`);
   }
@@ -245,7 +249,8 @@ export async function* iterSavedAlbums(opts: {
     const { body } = await callApi(
       `${opts.baseUrl}/album/sublist?limit=${NETEASE_PAGE_SIZE}&offset=${offset}`,
       fetchFn,
-      opts.timeoutMs ?? 10_000
+      opts.timeoutMs ?? 10_000,
+      opts.cookie
     );
     if (typeof body.code === 'number' && body.code !== 200) throw new NeteaseError(body.code, `收藏专辑拉取失败（code ${body.code}，offset=${offset}）`);
     const { total, items } = extractSublistPage(body);
@@ -284,7 +289,8 @@ export async function fetchPlaylistAlbums(opts: {
     const { body } = await callApi(
       `${opts.baseUrl}/playlist/track/all?id=${encodeURIComponent(opts.playlistId)}&limit=${NETEASE_PAGE_SIZE}&offset=${offset}`,
       fetchFn,
-      opts.timeoutMs ?? 10_000
+      opts.timeoutMs ?? 10_000,
+      opts.cookie
     );
     if (typeof body.code === 'number' && body.code !== 200) throw new NeteaseError(body.code, `歌单拉取失败（code ${body.code}，offset=${offset}）`);
     const songs = Array.isArray(body['songs']) ? (body['songs'] as unknown[]) : [];

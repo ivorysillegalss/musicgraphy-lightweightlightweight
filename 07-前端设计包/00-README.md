@@ -46,6 +46,8 @@ Musicgraphy 2.0 的**设计侧交付包**：设计系统 PRD + 可双击评审�
 │                                       设计参考素材，非需求；实施引用须走评审案）
 │                                       · v1.1 增 §5 模拟实现 0→1 草案卡 DR-G/M/A/V/I 线 14 张
 │                                         （落点/依赖/规模/波次建议——供 PM 排期分析，未建看板卡）
+│                                       · v1.2 增 §5.5 PM 排期登记：地图模块 0→1 复现收敛排期
+│                                         （DR-M0 契约先行 + 五步波次 + 换实现零改地图 DoD）
 ├── design-system/musicgraphy/
 │   ├── MASTER.md                   设计系统 Source of Truth（工具持久化 + 裁决校准）
 │   └── pages/                      页面级覆盖（collection / album-detail）

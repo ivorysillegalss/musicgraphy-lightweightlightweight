@@ -127,6 +127,15 @@ window.MG_DAILY_REPORTS = {
             '看板 SPECIAL ⑦专项主线专区建卡四张 pending：S2-4 专辑空间漫游（R-106）/ S2-5 声音身份与叙事（R-107）/ S2-6 翻箱浏览模式（R-108）/ S2-7 流派星图（R-109）；专区 subtitle 注记「兼收设计参考登记」；全板 44→48 卡；优先级建议 = R-107a 文案层 → R-108 翻箱 → R-109 星图 → R-106 空间漫游（与 R-103 动效载体同批）→ R-107b 声音层，排期权在用户。本批零代码变更纯登记；协议 §7⑤。',
           ],
         },
+        {
+          heading: '网易云导入连通性实测（补记 · 同日晚 · 用户令「测试整体连通性」）',
+          kind: 'list',
+          items: [
+            '全链路打通：CLI fail-soft（未配置 exit 2）→ api-enhanced 网关 Node 直跑 3001（本机无 Docker；ivorysillegalss/api-enhanced，eapi 直连网易无需代理）→ QR 扫码登录（四轮全成功，MUSIC_R_T 令牌）→ 带登录态拉收藏 → preview 零写入。',
+            '**暴露并修复两处真网关盲区**（B5 的 18 项测试全为假网关注入故未复现）：① Cookie 未附加（callApi 只发 Accept，数据调用恒 code 301）→ 主线 6fa23bb 改经 Cookie 请求头传递；② 字段形状错配（真实条目 = artists 数组 + subTime，无 artist 对象/artistName/publishTime）→ shape dump 定形后主线 060f807 修 mapAlbumItem 艺术家链 + 收藏时间双兼容。回归测试 +2，check 184/184，已推 origin。',
+            '终态：**188 张收藏完整拉回、Unknown Artist = 0**（王菲/陈绮贞/陶喆/Prince/Pink Floyd/The Cure/青葉市子/放課後ティータイム 中英日全对）、preview 新 185 / 已有 3（dedupKey 实证命中）、零写入。披露：修复前同接口曾拉 2032 张（全 Unknown）——两次会话上游集合规模不同，正式导入后人工抽查。IM-31；正式导入（写库 + 封面下载）待用户点头。',
+          ],
+        },
       ],
 
       evidence: [

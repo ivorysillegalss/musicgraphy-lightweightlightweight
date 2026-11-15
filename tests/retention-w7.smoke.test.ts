@@ -88,9 +88,9 @@ describe('P1-1 回响卡片（echo/today · 四约束）', () => {
         { title: 't' }
       )
     );
-    const m = /<a class="echo-card" href="\/album\/([0-9a-f-]{36})"/.exec(page);
+    const m = /<a class="echo-card" href="\/album\/([0-9a-f-]{36})\?from=echo"/.exec(page); // W8-9 点击归因参数（2026-11-15 口径升级，评审案 docs/telemetry-review.md Q1b）
     assert.notEqual(m, null);
-    assert.equal(m?.[1], ids['Echo One']); // 点开即详情页，≤1 步
+    assert.equal(m?.[1], ids['Echo One']); // 点开即详情页，≤1 步（query 不加跳步）
   });
 
   test('无则不显示：echo=null（无周年记录 / safeEcho 馈赠失败）→ 不渲染回响区', () => {

@@ -5,6 +5,7 @@ import { openDatabase } from './db/connection';
 import { runMigrations } from './db/migrate';
 import { backupNow } from './db/backup';
 import { DAO } from './db/dao';
+import { createTelemetry } from './db/telemetry';
 import { createApp } from './app';
 import { MetadataRateLimiter } from './metadata/queue';
 import { MusicBrainzClient } from './metadata/musicbrainz';
@@ -17,6 +18,9 @@ ensureDirs(cfg);
 const db = openDatabase(cfg.dbPath);
 const applied = runMigrations(db, 'db/migrations');
 const dao = new DAO(db);
+// 行为埋点（W8-9 立项 2026-11-15，评审案 docs/telemetry-review.md）：天粒度本地计数，
+// mg_metrics=closed 停记（opt-out）；与呈现开关同枚 cookie 同语义——数据本地派生零外发。
+const telemetry = createTelemetry(db);
 
 // 元数据上游限流（复审 V2）：全局串行 ≥1.05s + 30/min 自我防线；UA 合规见 config。
 // 多源降级链（02 §5.1 / Step 4）：数组序 = 优先级；iTunes 叠加 20/min 单独配额；
@@ -48,7 +52,7 @@ const onAlbumAdded = (albumId: string, _sourceId: string, coverUrl: string | nul
   })();
 };
 
-const app = createApp(dao, cfg, sources, { onAlbumAdded, cover: { gate: coverGate } });
+const app = createApp(dao, cfg, sources, { onAlbumAdded, cover: { gate: coverGate }, telemetry });
 
 // 备份（R1/V14）：启动时 + 每日定时；按天去重，保留 7 天；失败不阻塞
 try {

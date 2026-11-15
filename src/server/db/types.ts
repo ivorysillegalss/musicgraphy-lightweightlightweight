@@ -108,7 +108,8 @@ export interface ExportPayload {
 }
 
 // —— 观察池仪表（PRD §6 六埋点 / 02 §4 metrics 行：{data}，匿名化、可关闭）——
-// coverage 北极星实算（SQL_COVERAGE）；行为类五项待埋点（W8-9 行为层）→ null，notes 逐项记录数据源缺失说明
+// coverage 北极星实算（SQL_COVERAGE）；named_view_rate 实算（P1-10）；行为类四项自 W8-9 立项（2026-11-15）
+// 起 0005 telemetry_days 28 天窗口实算——无样本 → null，notes 仅在 null 时给出口径说明
 export interface MetricsCoverage {
   coverage: number | null;
   search_fail_rate: number | null;
@@ -117,7 +118,7 @@ export interface MetricsCoverage {
   note_revisit_rate: number | null;
   export_usage: number | null;
   generated_at: string;
-  /** null 字段的数据源缺失说明（埋点接线后对应条目移除，勿伪造数字） */
+  /** null 字段说明（无样本/无数据源时如实解释并给出口径，勿伪造数字；实算后对应条目移除） */
   notes: Partial<Record<'search_fail_rate' | 'named_view_rate' | 'echo_ctr' | 'note_revisit_rate' | 'export_usage', string>>;
 }
 

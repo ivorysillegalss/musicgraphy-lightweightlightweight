@@ -2,9 +2,10 @@
  * metrics.ts —— 观察池仪表页（PRD §6 六埋点 · 02 §4 metrics 行；PM §4 W8「观察池仪表，匿名化可关闭」）。
  *
  * 口径（PRD §5 + 04B §3）：统计极简 = 自托管匿名计数（可关闭），不用付费分析栈；
- * 匿名化 = 仅聚合比率、无个人标识符（02 §4）；数据全部本地派生、无任何外发。
+ * 匿名化 = 仅聚合比率、无个人标识符；数据全部本地派生、无任何外发。
  * 「可关闭」= 呈现级开关（POST /metrics/toggle → cookie mg_metrics）：关闭隐藏本页数字呈现；
- * coverage 北极星为档案数据直接聚合（非行为埋点），行为类五项待 W8-9 埋点接线（null + notes 逐项说明，勿伪造数字）。
+ * coverage 北极星为档案数据直接聚合（非行为埋点）；行为类四项自 W8-9 立项（2026-11-15，
+ * 评审案 docs/telemetry-review.md）起近 28 天窗口实算——窗口内无样本如实 null（勿伪造数字）。
  * 无 JS 基线：开关 = 原生 form POST + 303。
  */
 import { html } from 'hono/html';
@@ -30,7 +31,7 @@ function metricCard(m: (typeof METRIC_LABELS)[number], data: MetricsCoverage): E
   return html`<div class="zone" style="min-width:240px; flex:1;">
   <div class="small" style="color:var(--color-muted-foreground);">${m.label}</div>
   <div style="font-family:var(--font-display); font-size:30px; margin:4px 0;">${
-    value === null ? html`<span class="mono" style="font-size:16px; color:var(--color-muted-foreground);">— 待埋点</span>` : html`${pct(value)}`
+    value === null ? html`<span class="mono" style="font-size:16px; color:var(--color-muted-foreground);">— 暂无数据</span>` : html`${pct(value)}`
   }</div>
   <div class="small" style="color:var(--color-muted-foreground);">${m.hint}${note === '' ? '' : html`<br><span class="mono">${note}</span>`}</div>
 </div>`;

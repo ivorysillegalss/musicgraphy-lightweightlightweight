@@ -7,6 +7,7 @@
 // 注意：本域是"搜索外部源"；Collection 内检索走 collection/records 域的 q 参数。
 import { Hono } from 'hono';
 import type { DAO } from '../db/dao';
+import type { Telemetry } from '../db/telemetry';
 import { errorBody } from '../http';
 import { LocalRateLimitError } from '../metadata/queue';
 import { UpstreamError } from '../metadata/musicbrainz';
@@ -15,7 +16,7 @@ import { SourceChain, type AlbumSource } from '../metadata/sources';
 
 const SOURCE_NAMES = new Set(['musicbrainz', 'deezer', 'itunes', 'discogs']);
 
-export function metadataRoutes(dao: DAO, sources: AlbumSource[]): Hono {
+export function metadataRoutes(dao: DAO, sources: AlbumSource[], rec?: Telemetry | null): Hono {
   const app = new Hono();
   const chain = new SourceChain(sources);
 
@@ -42,11 +43,13 @@ export function metadataRoutes(dao: DAO, sources: AlbumSource[]): Hono {
         });
       }
       if (err instanceof UpstreamError) {
+        rec?.searched(c, true); // W8-9 埋点：上游不可用 = 用户无结果，计入失败（评审案 docs/telemetry-review.md Q1a）
         const headers: Record<string, string> = err.retryAfterS !== null ? { 'Retry-After': String(err.retryAfterS) } : {};
         return c.json(errorBody('upstream_unavailable', '元数据上游暂不可用，请稍后重试', { upstream_status: err.status, code: err.code }), 502, headers);
       }
       throw err;
     }
+    rec?.searched(c, items.length === 0); // W8-9 埋点：搜索会话（零结果 = 失败口径，PRD §6「无结果搜索会话」；429/422 上方早退不计）
     return c.json({ data: items });
   });
 

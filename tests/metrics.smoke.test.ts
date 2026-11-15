@@ -1,5 +1,6 @@
 // 观察池仪表冒烟（PRD §6 / 02 §4 metrics 行）：覆盖率对种子库手工核算值断言（北极星口径：
-// ≥1 根线索 Note/Tag/听期）· 空档案 0/0 → null · 行为类五项 null + notes 数据源缺失说明 · 鉴权守卫
+// ≥1 根线索 Note/Tag/听期）· 空档案 0/0 → null · 行为类四项 28 天窗口实算（W8-9 立项 2026-11-15，
+// 评审案 docs/telemetry-review.md）——本文件无埋点实例 → 窗口无样本 → null + notes 口径说明 · 鉴权守卫
 import assert from 'node:assert/strict';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -48,14 +49,14 @@ describe('观察池仪表（PRD §6，02 §4 metrics 行）', () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test('空档案：coverage = null（0/0 无定义）+ 行为类四项 null + notes 缺失说明 + {data} 包裹', async () => {
+  test('空档案：coverage = null（0/0 无定义）+ 行为类四项窗口无样本 null + notes 口径说明 + {data} 包裹', async () => {
     const res = await app.request('/api/v1/metrics/coverage', G);
     assert.equal(res.status, 200);
     const d = (JSON.parse(await res.text()) as CoverageBody).data;
     assert.equal(d.coverage, null);
     for (const k of ['search_fail_rate', 'echo_ctr', 'note_revisit_rate', 'export_usage'] as const) {
-      assert.equal(d[k], null, `${k} 待埋点必须 null（勿伪造数字）`);
-      assert.match(d.notes[k] ?? '', /W8-9/, `${k} 须附数据源缺失说明`);
+      assert.equal(d[k], null, `${k} 窗口无样本必须 null（勿伪造数字）`);
+      assert.ok((d.notes[k] ?? '').length > 0, `${k} 无样本须附口径/无样本说明`);
     }
     // named_view_rate：P1-10 saved_views 落地后实算（2026-11-14 用户批准）——空档案无视图仍 null，但 notes 缺口说明已移除
     assert.equal(d.named_view_rate, null);

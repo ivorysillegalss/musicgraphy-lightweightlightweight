@@ -13,6 +13,7 @@ import { savedViewRoutes } from './routes/views';
 import { pagesRoutes } from './routes/pages';
 import { coverRoutes } from './metadata/cover-routes';
 import type { CoverGate } from './metadata/cover-gate';
+import type { Telemetry } from './db/telemetry';
 import { SourceChain, type AlbumSource } from './metadata/sources';
 
 export type AppOptions = RecordsRouteOptions & {
@@ -23,6 +24,8 @@ export type AppOptions = RecordsRouteOptions & {
     /** 封面门（IM-22 R3：single-flight + 独立串行门）；server.ts 接线共享实例，缺省 = 零间距门（测试） */
     gate?: CoverGate;
   };
+  /** 行为埋点（W8-9 立项 2026-11-15，评审案 docs/telemetry-review.md）；server.ts 接线共享实例，缺省 = 不记录（测试） */
+  telemetry?: Telemetry | null;
 };
 
 export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: AppOptions = {}): Hono {
@@ -45,9 +48,9 @@ export function createApp(dao: DAO, cfg: Config, sources: AlbumSource[], opts: A
   // 鉴权（V10）：登录页 + 页面 302 守卫 + API cookie/Bearer + CSRF；须先于业务路由注册
   installAuth(app, cfg);
 
-  app.route('/api/v1', metadataRoutes(dao, sources));
+  app.route('/api/v1', metadataRoutes(dao, sources, opts.telemetry));
   app.route('/api/v1', recordsRoutes(dao, opts));
-  app.route('/api/v1', exportRoutes(dao, opts.cover?.coversDir ?? cfg.coversDir));
+  app.route('/api/v1', exportRoutes(dao, opts.cover?.coversDir ?? cfg.coversDir, opts.telemetry));
   app.route('/api/v1', metricsRoutes(dao));
   app.route('/api/v1', savedViewRoutes(dao)); // P1-10 命名视图（用户 2026-11-14 批准，评审案 docs/saved-views-review.md——挂载一行披露）
   // 呈现层（ADR-003）：SSR 页面子应用——Collection / 详情双区 / 添加基线 / 片段端点。

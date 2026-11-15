@@ -9,6 +9,7 @@ import { Readable } from 'node:stream';
 import { crc32 } from 'node:zlib';
 import { Hono } from 'hono';
 import type { DAO } from '../db/dao';
+import type { Telemetry } from '../db/telemetry';
 import type { ExportItem, ExportPayload } from '../db/types';
 import { errorBody } from '../http';
 
@@ -171,7 +172,7 @@ function coverEntries(coversDir: string): ZipEntry[] {
 const ymd = (d: Date): string =>
   `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 
-export function exportRoutes(dao: DAO, coversDir: string): Hono {
+export function exportRoutes(dao: DAO, coversDir: string, rec?: Telemetry | null): Hono {
   const app = new Hono();
 
   app.get('/export', (c) => {
@@ -195,10 +196,12 @@ export function exportRoutes(dao: DAO, coversDir: string): Hono {
         ...coverEntries(coversDir)
       ];
       const stream = Readable.toWeb(Readable.from(zipChunks(entries, now))) as unknown as ReadableStream<Uint8Array>;
+      rec?.exported(c); // W8-9 埋点：导出使用（评审案 docs/telemetry-review.md，best-effort）
       return c.body(stream, 200, attach('zip'));
     }
 
     const payload = dao.exportAll();
+    rec?.exported(c); // W8-9 埋点：导出使用（评审案 docs/telemetry-review.md，best-effort）
     if (format === 'csv') return c.body(buildCsv(payload), 200, attach('csv'));
     return c.body(buildJson(payload), 200, attach('json'));
   });

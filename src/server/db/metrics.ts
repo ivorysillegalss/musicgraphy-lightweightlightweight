@@ -1,12 +1,13 @@
 // 观察池仪表域（PRD §6 六埋点 + 02 §4 metrics 行；自 dao.ts 外拆保持 G3<200——域文件委托先例 = associations/writes）
 // coverage = 线索覆盖率（≥1 根线索 Note/Tag/听期的记录占比，北极星，SQL_COVERAGE 实算）；
-// named_view_rate = 命名视图周人均新建数（P1-10 saved_views 表落地后实算，2026-11-14 用户批准——SQL_NAMED_VIEW）；
-// 其余行为类四项（search_fail_rate / echo_ctr / note_revisit_rate / export_usage）无埋点数据源 → null：
-//   search_fail_rate 无搜索会话日志表；echo_ctr / note_revisit_rate / export_usage 为曝光-点击-会话级行为事件，
-//   现有表不承载——埋点属 W8-9 行为层，接线前不伪造数字（notes 逐项说明）。
+// named_view_rate = 命名视图周人均新建数（P1-10 saved_views 表实算，SQL_NAMED_VIEW）；
+// 行为类四项（W8-9 立项 2026-11-15，评审案 docs/telemetry-review.md，用户执行令）：0005 telemetry_days
+// 天粒度计数 → windowSums 近 28 天窗口实算——0/0 无样本 → null（勿伪造）；notes 仅在 null 时给出
+// 「无样本 + 口径 + 埋点起点」说明（实算后对应条目移除）。
 import { nowIso, type Row, type StmtCache } from './sql';
 import { SQL_COVERAGE, SQL_NAMED_VIEW, SQL_STATS } from './queries';
 import { cell, type MetricsCoverage, type Stats } from './types';
+import { WINDOW_DAYS, windowStartDay, windowSums } from './telemetry';
 
 export type { MetricsCoverage };
 
@@ -33,24 +34,49 @@ function namedViewRate(st: StmtCache, userId: string): number | null {
   return cnt / weeks;
 }
 
+/** 行为类四仪表（近 28 天窗口实算，评审案 §3 口径）：0/0 无样本 → null */
+function behaviorRates(st: StmtCache, userId: string): Pick<MetricsCoverage, 'search_fail_rate' | 'echo_ctr' | 'note_revisit_rate' | 'export_usage'> {
+  const w = windowSums(st, windowStartDay());
+  // export_usage（评审案 Q1d）：有效天数 = min(28, 自首记录 added_at 起含首尾天数)；档案空（无记录）→ null
+  const fr = st.get('SELECT MIN(added_at) AS first_at FROM collection_record WHERE user_id = ?').get(userId) as Row | undefined;
+  const firstAt = cell(fr ?? {}, 'first_at');
+  let exportUsage: number | null = null;
+  if (typeof firstAt === 'string' && firstAt !== '') {
+    const firstMs = Date.parse(firstAt);
+    if (Number.isFinite(firstMs)) {
+      const ageDays = Math.max(1, Math.floor((Date.now() - firstMs) / 86_400_000) + 1);
+      exportUsage = w.export_days / Math.min(WINDOW_DAYS, ageDays);
+    }
+  }
+  return {
+    search_fail_rate: w.search_total > 0 ? w.search_fail / w.search_total : null,
+    echo_ctr: w.echo_shown > 0 ? w.echo_click / w.echo_shown : null,
+    note_revisit_rate: w.detail_view > 0 ? w.note_view / w.detail_view : null,
+    export_usage: exportUsage
+  };
+}
+
+const WINDOW_NOTE = `口径 = 近 ${WINDOW_DAYS} 天窗口（评审案 docs/telemetry-review.md Q1；埋点自 2026-11-15 起累计）`;
+
 /** 观察池六仪表（02 §4：{data}，匿名化 = 仅聚合比率、无个人标识符；空档案 0/0 无定义 → coverage null） */
 export function metricsCoverage(st: StmtCache, userId = 'local'): MetricsCoverage {
   const r = (st.get(SQL_COVERAGE).get(userId, userId) as Row | undefined) ?? {};
   const total = Number(cell(r, 'total') ?? 0);
   const covered = Number(cell(r, 'covered') ?? 0);
+  const b = behaviorRates(st, userId);
   return {
     coverage: total > 0 ? covered / total : null,
-    search_fail_rate: null,
+    search_fail_rate: b.search_fail_rate,
     named_view_rate: namedViewRate(st, userId),
-    echo_ctr: null,
-    note_revisit_rate: null,
-    export_usage: null,
+    echo_ctr: b.echo_ctr,
+    note_revisit_rate: b.note_revisit_rate,
+    export_usage: b.export_usage,
     generated_at: nowIso(),
     notes: {
-      search_fail_rate: '无搜索会话日志表，埋点属 W8-9 行为层',
-      echo_ctr: '无卡片曝光/点击事件记录，埋点属 W8-9 行为层',
-      note_revisit_rate: '无详情页个人区回访事件记录，埋点属 W8-9 行为层',
-      export_usage: '无导出会话事件记录，埋点属 W8-9 行为层'
+      ...(b.search_fail_rate === null ? { search_fail_rate: `窗口内无搜索（429/422 不计 = 搜索未发生）。${WINDOW_NOTE}` } : {}),
+      ...(b.echo_ctr === null ? { echo_ctr: `窗口内无回响卡曝光（echoToday 未命中或曝光后无点击）。${WINDOW_NOTE}` } : {}),
+      ...(b.note_revisit_rate === null ? { note_revisit_rate: `窗口内无详情页视图。${WINDOW_NOTE}` } : {}),
+      ...(b.export_usage === null ? { export_usage: '档案为空（无记录），导出使用率无定义。' } : {})
     }
   };
 }

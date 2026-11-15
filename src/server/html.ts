@@ -198,7 +198,8 @@ export function echoCard(item: CollectionItem): HtmlEscapedString {
     src !== null
       ? html`<img class="echo-cover" src="${src}" alt="">`
       : html`<div class="echo-cover" style="background:var(--swatch-${color?.varName ?? 'gray'});"></div>`;
-  return html`<a class="echo-card" href="/album/${item.id}">
+  // ?from=echo = W8-9 点击归因（评审案 docs/telemetry-review.md Q1b；query 不加跳步，P1-1「单入口 ≤1 步」不破坏）
+  return html`<a class="echo-card" href="/album/${item.id}?from=echo">
   ${cover}
   <div style="flex:1; min-width:0;">
     <div class="mono echo-date">ON THIS DAY · 一年前的今天</div>

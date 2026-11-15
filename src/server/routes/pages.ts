@@ -35,6 +35,7 @@ import { searchAlbums, type AlbumSearchItem } from '../metadata/search';
 import type { SourceChain } from '../metadata/sources';
 import { sameOrigin } from '../auth';
 import type { RecordsRouteOptions } from './records';
+import type { Telemetry } from '../db/telemetry';
 import { buildHref, cabinSection, parseFilter, queryJsonToFilter, renderCollection, resultsSection, toDaoFilters, type AxisCounts, type FilterState } from '../pages/collection';
 import { renderAlbumDetail, renderAlbumError, renderAlbumNotFound } from '../pages/album';
 import { renderAddPage } from '../pages/add';
@@ -47,7 +48,7 @@ import { searchSuggestFragment } from '../pages/suggest';
 const PAGE_LIMIT = 60; // ADR-005 内存纪律①：列表强制 LIMIT 60
 const ADDABLE_SOURCES = new Set(['musicbrainz', 'deezer', 'itunes', 'discogs', 'user-provided']);
 
-export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOptions = {}): Hono {
+export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOptions & { telemetry?: Telemetry | null } = {}): Hono {
   const app = new Hono();
 
   // —— 数据装配助手（handler 内自捕获 → HTML 三态；馈赠区静默）——
@@ -186,9 +187,11 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     const tagHint = getCookie(c, TAG_HINT_COOKIE) === quarterStamp() ? null : safeTagGov();
     const savedViews = safeSavedViews();
     const { candidates, notice } = await safeCandidates(q);
+    const echo = safeEcho();
+    if (echo !== null) opts.telemetry?.echoShown(c); // W8-9 埋点：回响卡曝光（echoToday 命中才计；评审案 docs/telemetry-review.md）
     return c.html(
       renderCollection(
-        { flash, dupHref: null, echo: safeEcho(), tagHint, savedViews, filter, counts, items, meta, total, candidates, notice, topTags: safeTopTags(), error },
+        { flash, dupHref: null, echo, tagHint, savedViews, filter, counts, items, meta, total, candidates, notice, topTags: safeTopTags(), error },
         { title: q === '' ? 'Musicgraphy · Collection' : `Musicgraphy · 「${q}」的检索` }
       )
     );
@@ -308,6 +311,8 @@ export function pagesRoutes(dao: DAO, chain: SourceChain, opts: RecordsRouteOpti
     const flash = c.req.query('flash') === 'duplicate' ? 'duplicate' : null;
     try {
       const detail = dao.getRecord(id);
+      // W8-9 埋点：详情视图 + ?from=echo 点击归因 + 「为什么」回访（best-effort，评审案 docs/telemetry-review.md）
+      opts.telemetry?.albumView(c, c.req.query('from') === 'echo', detail.note, detail.added_at);
       return c.html(renderAlbumDetail(detail, flash, { title: `Musicgraphy · ${detail.album.title}` }, safeAssociations(id)), 200);
     } catch (err) {
       if (err instanceof NotFoundError) {

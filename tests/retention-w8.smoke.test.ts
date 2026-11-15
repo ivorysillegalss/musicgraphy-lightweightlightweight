@@ -123,15 +123,15 @@ describe('P1-3 导出 UI 入口（页脚，永久免费红线）', () => {
 });
 
 describe('六仪表页（GET /metrics · 匿名化可关闭）', () => {
-  test('open 态：六仪表全渲染（coverage 实数 + 五项待埋点 + 逐项 note）+ 匿名化口径声明', async () => {
+  test('open 态：六仪表全渲染（coverage 实数 + 行为四项窗口无样本 null + 逐项 note）+ 匿名化口径声明', async () => {
     const html = await (await get('/metrics')).text();
     assert.ok(html.includes('线索覆盖率'));
     assert.ok(html.includes('北极星'));
     for (const label of ['搜索失败率', '命名视图创建密度', '回响卡片点击率', '「为什么」回访率', '导出使用率']) {
       assert.ok(html.includes(label));
     }
-    assert.ok(html.includes('待埋点')); // 五项 null → 如实呈现，勿伪造数字（B3 口径）
-    assert.ok(html.includes('无搜索会话日志表')); // notes 数据源缺失说明在场
+    assert.ok(html.includes('暂无数据')); // 行为四项窗口无样本 → null 如实呈现（W8-9 立项后口径：null = 无样本，勿伪造）
+    assert.ok(html.includes('窗口内无搜索')); // notes 无样本 + 口径说明在场（评审案 docs/telemetry-review.md Q5）
     assert.ok(html.includes('自托管匿名计数')); // 04B §3 口径
     assert.ok(html.includes('无个人标识符')); // 02 §4 匿名化口径
     assert.ok(html.includes('GENERATED AT')); // generated_at

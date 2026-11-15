@@ -118,6 +118,15 @@ window.MG_DAILY_REPORTS = {
             '范围词表 16 域固化于测试断言（工程规范与骨架/存储与迁移/鉴权与会话/API 路由/元数据与外部源/封面管线/备份与恢复/导出与重建/SSR 页面/前端岛屿/设计 tokens 与 CSS/仪表与埋点/脚本与 CLI/测试/文档包/看板与部署）；全板 44 卡四字段零遗漏自检 ok；node --test tests/ 11 项全绿（新增字段完整性断言）。',
           ],
         },
+        {
+          heading: '设计参考第二批登记（补记 · 同日 · 用户指令）',
+          kind: 'list',
+          items: [
+            '用户令「将这几个网站都加入当前的看板中的设计参考内容 并且分别创建需求参考他的设计原理 和思路」。四站点调研（2026-11-15 页面抓取 + repo README 核查）：① Album Atlas®（albumatlas.vercel.app）——「Interactive WebGL experience to explore and preview an artist\'s albums」：搜艺术家进入其专辑三维图集空间，漫游/点选/就地试听；② Chiara Luzzana（chiaraluzzana.com）——获奖声音设计师作品集，「A creator of sound. From pure noise to melody, everyday life is her Symphony.」：声音即身份、滚动即叙事、排版极简；③ cratedigger.js（risq.github.io/cratedigger + github.com/risq/cratedigger，MIT）——「3D vinyl records exploration & crate digging experience, using WebGL with Three.js」：黑胶箱侧脊陈列翻找抽出；④ Every Noise at Once（everynoise.com）——音频特征相似度流派散点地图，「YOU HAVE NOT YET HEARD YOUR FAVOURITE SONG」，密度即信息、零层级直达。',
+            '需求草案第二批 R-106~R-109 成文（01-产品理念终稿/需求草案-2026-11-15-设计参考第二批.md）：每站 = 设计参考分析（是什么/设计原理与思路）+ 借鉴原理→Musicgraphy 映射（功能准入四问自查：更快记录/更好整理/更容易找回/更好回顾）+ 草案方向 + 红线适配（资产自托管零 CDN / DD3 URL 即状态 / Topster=View 先例 / LIMIT≤60 / 隐私默认关 / 实施前评审案照出）+ 开放问题；R-107 拆两层（a 文案叙事层零架构 / b 声音层先过音频源合规评审）；R-109 锚定 Find/Organize 非推荐引擎（产品红线）。',
+            '看板 SPECIAL ⑦专项主线专区建卡四张 pending：S2-4 专辑空间漫游（R-106）/ S2-5 声音身份与叙事（R-107）/ S2-6 翻箱浏览模式（R-108）/ S2-7 流派星图（R-109）；专区 subtitle 注记「兼收设计参考登记」；全板 44→48 卡；优先级建议 = R-107a 文案层 → R-108 翻箱 → R-109 星图 → R-106 空间漫游（与 R-103 动效载体同批）→ R-107b 声音层，排期权在用户。本批零代码变更纯登记；协议 §7⑤。',
+          ],
+        },
       ],
 
       evidence: [
@@ -127,6 +136,7 @@ window.MG_DAILY_REPORTS = {
         { label: '补记证据', value: '主线 c9e1692（D1）/ 3378964 + b3ff02c（D4）/ dae9ae0（B9 埋点，16 files +442/-34）/ 824c72f（P1-4 评审案）；评审案 = musicgraphy/docs/telemetry-review.md + palette-review.md；IM-27/28/29；check 182/182' },
         { label: 'release 基线', value: 'origin = github.com/ivorysillegalss/musicgraphy-lightweightlightweight（空仓首推 main→main 新建分支；单拼名 musicgraphy-lightweight ls-remote 核实不存在）；基线 dae9ae0；门禁复跑 7×182/182（首跑 1 间歇未复现）；tracked 敏感排查零命中' },
         { label: '看板改版证据', value: 'node --test tests/ 11 项全绿（+字段完整性断言 + scope 词表 16 域）；语法自检 ok（tracks=7 / cards=44）；六件变更 = app.js / progress-data.js / 看板更新协议.md / 00-文件目录说明.txt / tests/docpackage.test.mjs / daily-reports.js；随本批提交并重部署线上' },
+        { label: '设计参考第二批', value: '需求草案 R-106~R-109（01-产品理念终稿/需求草案-2026-11-15-设计参考第二批.md 新建）+ SPECIAL 专区 S2-4~S2-7 pending（progress-data.js 全板 44→48 卡）；站点核查 = 页面抓取 + github.com/risq/cratedigger README；node --test tests/ 全绿；随本批提交并重部署线上' },
       ],
     },
 

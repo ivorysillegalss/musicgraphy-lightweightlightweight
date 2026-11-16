@@ -45,12 +45,24 @@ window.MG_DAILY_REPORTS = {
             'R-112 立项批文 + 「不同维度的个人信息」维度澄清（草案 Q4）+ 产品定位修订裁决（「个人档案」→「多用户的个人档案集合」）。',
           ],
         },
+        {
+          heading: '补记 · S2-2 搜索分字段定向实现收口（S2-2 实现会话 · 方案 b 钦定）',
+          kind: 'list',
+          items: [
+            '实现 = 主线 34d4837（8 文件 +687/−23，工作树干净）：search-parse.ts 新建纯函数解析器（artist:/title:/tag:/note: 前缀 + 引号值 + 贪尾值 + 大小写不敏感 + 未知前缀字面量 + 空值前缀忽略）+ buildWhere 接线（prepared 参数化；无前缀 SQL 与旧实现字节同形 = 向后兼容零行为变化）一处接线全链生效 + AlbumSource.search 可选 fields 外部链逐源透传（searchAlbums 同一解析，memo 键原始 q 零改动）+ search-box.ts 提示文案一行；npm run check 全绿 318/318（= 基线 273 + 本卡 45，Node v26.13.0）。',
+            '逐源实测留证（评审案 §4，2026-11-17 curl）：MB ASCII 字段语法 count=43 命中 OK Computer ✓、CJK 字段短语 = 有效 JSON count=0（已知限制靠链降级 iTunes 接手，CJK 裸查 count=4570 正常）；iTunes attribute=artistTerm/albumTerm 实测可用（单 attribute 官方限制→组合折叠）；Deezer 本环境 TCP 超时 ×2 不可达 = 全量诚实降级折叠盲搜；Discogs token 未配置 = 文档级实装 + 单测断言 URL。DD3 零新参数（语法住在 q 值内）✓。',
+            '看板 S2-2 置 done + 评审案-搜索分字段定向.md 随批留档（语法规范定稿/降级口径/CJK 限制三项待追认）；本卡 progress-data.js hunk 经 plumbing 局部暂存仅提交本卡（并行未提交件原样保留，S2-34 e57a09a 同族先例）。',
+            '勘误：本条目原捎带披露「S2-2 开卡笔未收口」——收口时点该卡已随本补记会话置 done（34d4837）；登记会话 R-111/R-112 全套已自行提交入 git（9e8a5c5，临时 worktree 重放收口），本日报条目主体已随其入 git，本补记随 S2-2 收口笔追加（7f95537/b180dd7 捎带披露先例族对称适用）。',
+          ],
+        },
       ],
 
       evidence: [
         '需求草案 = 01-产品理念终稿/需求草案-2026-11-17-爬取限流对策与多用户账户系统.md（R-111/R-112 全文）',
         '评审案 = 05-系统架构设计/评审案-爬取限流对策.md（2026-11-17 登记 + 研究 agent 代码事实核查产出）',
         '看板 = progress-data.js S2-32/S2-33 新卡 + SPECIAL subtitle 登记句 + 看板更新协议.md §7⑩ + 00-文件目录说明.txt 索引登记',
+        '评审案（S2-2） = 05-系统架构设计/评审案-搜索分字段定向.md（2026-11-17 实现随批交付；语法规范/逐源证据/降级口径/FTS5 后置观察项）',
+        '主线（S2-2） = musicgraphy 34d4837（S2-2 全部代码与测试；npm run check 318/318 实测，工作树干净）',
       ],
     },
 

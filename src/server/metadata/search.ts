@@ -12,9 +12,10 @@
 //   memo 经可选参数注入（测试自建实例隔离）；缺省 = 模块级共享实例——三调用方
 //   （routes/metadata、pages、suggest）共用同一份缓存与在途合并，DAO 零改动（缓存放 metadata 域）。
 import type { DAO } from '../db/dao';
+import { parseFieldQuery } from '../db/search-parse';
 import type { AliasSourceRef, AlbumRow } from '../db/types';
 import type { AlbumCandidate } from './musicbrainz';
-import type { MetadataSource, SourceChain } from './sources';
+import { externalFieldsOf, type AlbumSearchFields, type MetadataSource, type SourceChain } from './sources';
 
 /** 响应项：02 §2.1 字段对齐 + FR-1 的 in_collection 标记 */
 export interface AlbumSearchItem extends AlbumCandidate {
@@ -116,9 +117,12 @@ export async function searchAlbums(
   // R1 快照回放：命中 → 从 DB 重建 items（重算 in_collection），零上游
   const cachedIds = memo.take(chain, key);
   if (cachedIds !== null) return rebuildItems(dao, cachedIds);
+  // S2-2 P2：与本地 buildWhere 同一解析（search-parse）；无前缀 → fields=undefined
+  // = 现状盲搜零行为变化。memo 键保持原始 q（同 q 同解析同结果）。
+  const fields: AlbumSearchFields | undefined = externalFieldsOf(parseFieldQuery(q)) ?? undefined;
   let items: AlbumSearchItem[];
   try {
-    const candidates = await memo.joinInFlight(chain, key, () => chain.search(q, limit));
+    const candidates = await memo.joinInFlight(chain, key, () => chain.search(q, limit, fields));
     items = [];
     const seenRows = new Set<string>();
     for (const cand of candidates) {

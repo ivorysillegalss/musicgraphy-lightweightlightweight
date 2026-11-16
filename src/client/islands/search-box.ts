@@ -68,7 +68,7 @@ export function mount(root: HTMLElement): void {
   input.addEventListener('input', refresh);
   input.addEventListener('focus', () => {
     if (input.value.trim().length < 2 && pop.hidden) {
-      pop.innerHTML = '<div class="pop-empty">搜索你的档案（标题 / 艺术家 / Tag / 一句「当时」），或粘贴链接直接添加。</div>';
+      pop.innerHTML = '<div class="pop-empty">搜索你的档案（标题 / 艺术家 / Tag / 一句「当时」），或粘贴链接直接添加。支持定向：artist: / title: / tag: / note:（例 artist:"Jordan Rakei"）。</div>';
       pop.hidden = false;
     }
   });

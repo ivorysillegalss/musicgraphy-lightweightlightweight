@@ -3,6 +3,7 @@
 // iTunes 叠加单独 20/min 滑窗门（02 §4）。统一超时；任一源失败/空结果 → 降级下一源，
 // 已有结果不受影响；全部失败才把主源错误抛给路由层（502/429 映射）。
 import { logger } from '../logger';
+import type { ParsedQuery } from '../db/search-parse';
 import { UpstreamError, type AlbumCandidate } from './musicbrainz';
 import { LocalRateLimitError } from './queue';
 
@@ -14,11 +15,47 @@ export interface RateLimiterLike {
   run<T>(fn: () => Promise<T>): Promise<T>;
 }
 
-/** 单个上游源的统一形态：链上按数组序 = 优先级；enabled=false 直接跳过 */
+/**
+ * S2-2 P2 分字段定向（评审案 = 文档包 05/评审案-搜索分字段定向.md）：
+ * 外部链可用字段 = artist/title（专辑目录口径）；tag/note 为本地概念，其值折入
+ * extra（盲搜文本）——不丢词，诚实降级。fields = undefined 时源行为与现状完全一致。
+ */
+export interface AlbumSearchFields {
+  artist: string[];
+  title: string[];
+  /** 无法分字段的值（bare/tag/note）折入盲搜文本 */
+  extra: string[];
+}
+
+/** 解析结果 → 外部链字段；无任何可透传值（未出现前缀或全空）→ null（纯现状盲搜） */
+export function externalFieldsOf(parsed: ParsedQuery): AlbumSearchFields | null {
+  if (!parsed.fielded) return null;
+  const extra = [...parsed.bare, ...parsed.tag, ...parsed.note];
+  if (parsed.artist.length === 0 && parsed.title.length === 0 && extra.length === 0) return null;
+  return { artist: parsed.artist, title: parsed.title, extra };
+}
+
+/** 盲搜降级 q：全部值折叠（前缀记号与引号剥离，保留用户原词）——不支持分字段的源按它原样盲搜 */
+export function blindQueryOf(fields: AlbumSearchFields): string {
+  return [...fields.artist, ...fields.title, ...fields.extra].join(' ').trim();
+}
+
+/** MusicBrainz Lucene 字段语法：artist:/release:（引号剥除防语法注入，resolveReleaseByArtistAndTitle 同款）；
+ *  extra 折为 OR 组（括号组保住 bare 的现状 OR 语义，优先级不吞字段条件），字段间显式 AND。 */
+function mbLuceneOf(fields: AlbumSearchFields): string {
+  const parts: string[] = fields.artist
+    .map((a) => `artist:"${a.replace(/"/g, '')}"`)
+    .concat(fields.title.map((t) => `release:"${t.replace(/"/g, '')}"`));
+  if (fields.extra.length > 0) parts.push(`(${fields.extra.join(' ')})`);
+  return parts.join(' AND ');
+}
+
+/** 单个上游源的统一形态：链上按数组序 = 优先级；enabled=false 直接跳过。
+ *  fields（S2-2 P2）可省略：省略/undefined = 现状盲搜，源内自行决定映射或降级。 */
 export interface AlbumSource {
   readonly name: MetadataSource;
   readonly enabled: boolean;
-  search(q: string, limit: number): Promise<AlbumCandidate[]>;
+  search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]>;
 }
 
 /** iTunes 单独配额（02 §4：≈20 calls/min）：60s 滑窗，满 → LocalRateLimitError（调用方降级跳过） */
@@ -77,12 +114,16 @@ export class MusicBrainzSource implements AlbumSource {
   readonly name = 'musicbrainz' as const;
   readonly enabled = true;
   constructor(private client: { searchReleases(q: string, limit?: number): Promise<AlbumCandidate[]> }) {}
-  search(q: string, limit: number): Promise<AlbumCandidate[]> {
-    return this.client.searchReleases(q, limit);
+  search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]> {
+    // S2-2 P2：分字段 → Lucene 字段语法（ASCII 实测可用；CJK 字段短语实测 0 命中 = 已知
+    // 限制，靠链降级下一源接手——评审案逐源证据节）。无 fields = 原样透传（现状字节同形）。
+    return this.client.searchReleases(fields !== undefined ? mbLuceneOf(fields) : q, limit);
   }
 }
 
-/** Deezer（免费·封面好）：search/album；cover_big 500px */
+/** Deezer（免费·封面好）：search/album；cover_big 500px。
+ *  S2-2 P2 诚实降级源：本环境实测 api.deezer.com 不可达（连接超时 ×2），分字段参数
+ *  支持现状无法留证 → 不做字段映射，fields 折叠为盲搜 q（评审案逐源证据节）。 */
 export class DeezerSource implements AlbumSource {
   readonly name = 'deezer' as const;
   constructor(
@@ -94,8 +135,9 @@ export class DeezerSource implements AlbumSource {
   get enabled(): boolean {
     return true;
   }
-  async search(q: string, limit: number): Promise<AlbumCandidate[]> {
-    const url = `https://api.deezer.com/search/album?q=${encodeURIComponent(q)}&limit=${limit}`;
+  async search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]> {
+    const query = fields !== undefined ? blindQueryOf(fields) || q : q;
+    const url = `https://api.deezer.com/search/album?q=${encodeURIComponent(query)}&limit=${limit}`;
     return this.limiter.run(async () => {
       const body = (await getJson(url, this.userAgent, this.timeoutMs, this.fetchFn)) as {
         data?: Array<{ id: unknown; title?: unknown; artist?: unknown; cover_big?: unknown; cover_medium?: unknown; release_date?: unknown }>;
@@ -139,7 +181,7 @@ export class ITunesSource implements AlbumSource {
   get enabled(): boolean {
     return true;
   }
-  async search(q: string, limit: number): Promise<AlbumCandidate[]> {
+  async search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]> {
     // 本源配额满 → 静默降级（不打上游、不占全局队列；下一源接手）
     try {
       this.gate.take();
@@ -150,7 +192,25 @@ export class ITunesSource implements AlbumSource {
       }
       throw err;
     }
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=album&limit=${limit}`;
+    // S2-2 P2（attribute=artistTerm/albumTerm 均实测可用）：单请求仅容一个 attribute →
+    // 恰一个字段值且无 extra 时字段化，其余组合（双字段/多值/含 extra）= 盲搜折叠降级。
+    let query = q;
+    let attribute: 'artistTerm' | 'albumTerm' | null = null;
+    if (fields !== undefined) {
+      const a = fields.artist[0];
+      const t = fields.title[0];
+      if (fields.extra.length === 0 && fields.title.length === 0 && fields.artist.length === 1 && a !== undefined) {
+        query = a;
+        attribute = 'artistTerm';
+      } else if (fields.extra.length === 0 && fields.artist.length === 0 && fields.title.length === 1 && t !== undefined) {
+        query = t;
+        attribute = 'albumTerm';
+      } else {
+        query = blindQueryOf(fields) || q;
+      }
+    }
+    const attrPart = attribute !== null ? `&attribute=${attribute}` : '';
+    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=album${attrPart}&limit=${limit}`;
     return this.limiter.run(async () => {
       const body = (await getJson(url, this.userAgent, this.timeoutMs, this.fetchFn)) as {
         results?: Array<{ collectionId?: unknown; collectionName?: unknown; artistName?: unknown; releaseDate?: unknown; artworkUrl100?: unknown; primaryGenreName?: unknown }>;
@@ -219,8 +279,27 @@ export class DiscogsSource implements AlbumSource {
     this.enabled = t !== '';
     this.tokenPart = this.enabled ? `&token=${encodeURIComponent(t)}` : '';
   }
-  async search(q: string, limit: number): Promise<AlbumCandidate[]> {
-    const url = `https://api.discogs.com/database/search?q=${encodeURIComponent(q)}&type=release&per_page=${limit}${this.tokenPart}`;
+  async search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]> {
+    // S2-2 P2：官方文档参数 artist= / release_title=（各恰一值可表达，双字段可同带）；
+    // token 未配置环境未实测（评审案逐源证据节留档），映射按官方文档实现 + 单测断言 URL。
+    const params: string[] = [`q=${encodeURIComponent(q)}`, 'type=release', `per_page=${limit}`];
+    if (fields !== undefined) {
+      const a = fields.artist[0];
+      const t = fields.title[0];
+      const mappable =
+        fields.artist.length <= 1 && fields.title.length <= 1 && fields.artist.length + fields.title.length > 0;
+      if (mappable) {
+        const extra = fields.extra.join(' ');
+        // extra 为空 → 省略 q 参数（仅字段过滤；Discogs 文档允许 q 缺省）
+        if (extra !== '') params[0] = `q=${encodeURIComponent(extra)}`;
+        else params.splice(0, 1);
+        if (a !== undefined) params.push(`artist=${encodeURIComponent(a)}`);
+        if (t !== undefined) params.push(`release_title=${encodeURIComponent(t)}`);
+      } else {
+        params[0] = `q=${encodeURIComponent(blindQueryOf(fields) || q)}`;
+      }
+    }
+    const url = `https://api.discogs.com/database/search?${params.join('&')}${this.tokenPart}`;
     return this.limiter.run(async () => {
       const body = (await getJson(url, this.userAgent, this.timeoutMs, this.fetchFn)) as {
         results?: Array<{ id?: unknown; title?: unknown; year?: unknown; country?: unknown; genre?: unknown; style?: unknown; cover_image?: unknown; thumb?: unknown }>;
@@ -257,12 +336,12 @@ export class DiscogsSource implements AlbumSource {
  */
 export class SourceChain {
   constructor(private readonly sources: AlbumSource[]) {}
-  async search(q: string, limit: number): Promise<AlbumCandidate[]> {
+  async search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]> {
     const errors: Array<{ source: MetadataSource; err: unknown }> = [];
     for (const src of this.sources) {
       if (!src.enabled) continue;
       try {
-        const items = await src.search(q, limit);
+        const items = await src.search(q, limit, fields);
         const usable = items.filter((it) => it.source_id !== '' && it.title !== '');
         if (usable.length === 0) continue;
         return usable;

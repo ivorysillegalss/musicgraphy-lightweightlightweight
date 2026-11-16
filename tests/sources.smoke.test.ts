@@ -10,7 +10,7 @@ import { loadConfig, type Config } from '../src/server/config';
 import { DAO } from '../src/server/db/dao';
 import { openDatabase, type Db } from '../src/server/db/connection';
 import { runMigrations } from '../src/server/db/migrate';
-import { MinuteWindowGate, SourceChain, DeezerSource, DiscogsSource, ITunesSource, type AlbumSource } from '../src/server/metadata/sources';
+import { MinuteWindowGate, SourceChain, DeezerSource, DiscogsSource, ITunesSource, MusicBrainzSource, type AlbumSearchFields, type AlbumSource } from '../src/server/metadata/sources';
 import { UpstreamError, type AlbumCandidate } from '../src/server/metadata/musicbrainz';
 import { LocalRateLimitError } from '../src/server/metadata/queue';
 
@@ -316,5 +316,96 @@ describe('§5.2 跨源合并 + /covers 懒下载（路由级）', () => {
     assert.equal(legacy.headers.get('cache-control'), 'public, max-age=31536000, immutable');
     const junk = await app.request('/covers/not-a-cover-file.jpg');
     assert.equal(junk.status, 404);
+  });
+});
+
+// ---------------------------------------------------------------- S2-2 P2 外部链分字段透传（方案 b）
+// 评审案 = ../Musicgraphy-2.0-文档包/05-系统架构设计/评审案-搜索分字段定向.md（逐源证据节）
+describe('S2-2 P2 分字段逐源映射（零网络，fetchFn 注入断言 URL）', () => {
+  class FieldRecorder implements AlbumSource {
+    readonly name = 'musicbrainz' as const;
+    readonly enabled = true;
+    last: { q: string; limit: number; fields?: AlbumSearchFields } | null = null;
+    async search(q: string, limit: number, fields?: AlbumSearchFields): Promise<AlbumCandidate[]> {
+      this.last = { q, limit, fields };
+      return [];
+    }
+  }
+
+  const capturingFetch = (capture: { url: string }): typeof fetch =>
+    (async (u: string | URL) => {
+      capture.url = String(u);
+      return new Response(JSON.stringify({ releases: [], data: [], results: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }) as typeof fetch;
+
+  test('MusicBrainzSource：fields → Lucene 字段语法（artist:"…" AND release:"…" + extra OR 组）；无 fields 原样透传', async () => {
+    const seen: string[] = [];
+    const src = new MusicBrainzSource({
+      searchReleases: async (q: string) => {
+        seen.push(q);
+        return [];
+      }
+    });
+    await src.search('artist:キリンジ title:三', 5, { artist: ['キリンジ'], title: ['三'], extra: [] });
+    assert.equal(seen[0], 'artist:"キリンジ" AND release:"三"');
+    await src.search('x', 5, { artist: ['a'], title: ['t'], extra: ['jazz', 'funk'] });
+    assert.equal(seen[1], 'artist:"a" AND release:"t" AND (jazz funk)', 'extra 折为 OR 括号组（bare 现状 OR 语义）');
+    await src.search('a"b', 5, { artist: ['a"b'], title: [], extra: [] });
+    assert.equal(seen[2], 'artist:"ab"', '引号剥除防 Lucene 语法注入（resolveReleaseByArtistAndTitle 同款）');
+    await src.search('raw q', 5);
+    assert.equal(seen[3], 'raw q', '无 fields = 原样透传（现状字节同形）');
+  });
+
+  test('ITunesSource：单字段 attribute=artistTerm/albumTerm（实测可用）；组合/含 extra = 盲搜折叠降级', async () => {
+    const cap = { url: '' };
+    const src = new ITunesSource(new MetadataRateLimiterStub(), 'ua/1', 20, capturingFetch(cap));
+    await src.search('raw', 5, { artist: ['kirinji'], title: [], extra: [] });
+    assert.match(cap.url, /term=kirinji&entity=album&attribute=artistTerm&limit=5/);
+    await src.search('raw', 5, { artist: [], title: ['three'], extra: [] });
+    assert.match(cap.url, /term=three&entity=album&attribute=albumTerm&limit=5/);
+    await src.search('raw', 5, { artist: ['a'], title: ['b'], extra: [] });
+    assert.doesNotMatch(cap.url, /attribute=/, '双字段单请求不可表达 → 降级');
+    assert.match(cap.url, /term=a%20b/, '折叠 = 全值空格连接');
+    await src.search('raw', 5, { artist: [], title: [], extra: ['tag值'] });
+    assert.match(cap.url, /term=tag%E5%80%BC/, 'tag 值折入盲搜文本（不丢词）');
+    await src.search('raw', 5);
+    assert.match(cap.url, /term=raw&entity=album&limit=5/, '无 fields = 现状字节同形');
+  });
+
+  test('DiscogsSource：artist=/release_title=（官方文档参数，token 环境实测留待）；extra 折入 q；extra 空省 q', async () => {
+    const cap = { url: '' };
+    const src = new DiscogsSource(new MetadataRateLimiterStub(), 'ua', 'pat_token', capturingFetch(cap));
+    await src.search('raw', 5, { artist: ['coltrane'], title: ['blue train'], extra: [] });
+    assert.match(cap.url, /type=release&per_page=5&artist=coltrane&release_title=blue%20train&token=pat_token/, 'extra 空 → q 参数省略');
+    await src.search('raw', 5, { artist: ['a'], title: [], extra: ['jazz'] });
+    assert.match(cap.url, /q=jazz&.*artist=a/);
+    await src.search('raw', 5, { artist: ['a'], title: ['b'], extra: [] });
+    assert.match(cap.url, /type=release&per_page=5&artist=a&release_title=b&token=pat_token/, '双字段可同时表达（官方参数各恰一值）');
+    await src.search('raw', 5, { artist: ['a', 'c'], title: [], extra: [] });
+    assert.doesNotMatch(cap.url, /artist=/, '同字段多值不可表达 → 折叠');
+    assert.match(cap.url, /q=a%20c/);
+    await src.search('raw', 5);
+    assert.match(cap.url, /\?q=raw&type=release&per_page=5&token=pat_token/, '无 fields = 现状字节同形');
+  });
+
+  test('DeezerSource：诚实降级源（本环境不可达未留证）→ fields 折叠盲搜 q；无 fields 现状同形', async () => {
+    const cap = { url: '' };
+    const src = new DeezerSource(new MetadataRateLimiterStub(), 'ua/1', capturingFetch(cap));
+    await src.search('raw', 5, { artist: ['a'], title: ['b'], extra: ['tag值'] });
+    assert.match(cap.url, /search\/album\?q=a%20b%20tag%E5%80%BC&limit=5/);
+    await src.search('raw', 5);
+    assert.match(cap.url, /search\/album\?q=raw&limit=5/, '无 fields = 现状字节同形');
+  });
+
+  test('SourceChain：fields 透传给每个尝试的源（降级链语义不变）', async () => {
+    const a = new FieldRecorder();
+    const b = new FieldRecorder();
+    const items = await new SourceChain([a, b]).search('artist:x', 5, { artist: ['x'], title: [], extra: [] });
+    assert.deepEqual(items, []);
+    assert.deepEqual(a.last?.fields, { artist: ['x'], title: [], extra: [] });
+    assert.deepEqual(b.last?.fields, { artist: ['x'], title: [], extra: [] }, '空结果 → 次源接手，fields 原样透传');
   });
 });

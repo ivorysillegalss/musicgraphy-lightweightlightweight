@@ -1,4 +1,5 @@
 import type { DatabaseSync, StatementSync } from 'node:sqlite';
+import { parseFieldQuery } from './search-parse';
 
 export type Cell = string | number | bigint | Uint8Array | null;
 export type Row = Record<string, Cell>;
@@ -71,12 +72,37 @@ export function buildWhere(f: Filters, userId: string, exclude?: Axis): { where:
     params.push(f.color);
   }
   if (f.q) {
-    const like = `%${escapeLike(f.q)}%`;
-    conds.push(
-      `(m.title LIKE ? ESCAPE '\\' OR m.artist LIKE ? ESCAPE '\\' OR r.note LIKE ? ESCAPE '\\' ` +
-        `OR EXISTS (SELECT 1 FROM record_tag rt2 JOIN tags t2 ON t2.id = rt2.tag_id WHERE rt2.record_id = r.id AND t2.name LIKE ? ESCAPE '\\'))`
-    );
-    params.push(like, like, like, like);
+    // S2-2 分字段定向（方案 b，评审案 = 文档包 05/评审案-搜索分字段定向.md）：
+    // 前缀记号逐值生成条件（AND）；bare 段维持现状盲搜（四字段 OR）。
+    // 整串无前缀时 bare 恰为一段 = 与旧实现字节同形（向后兼容零行为变化）。
+    const parsed = parseFieldQuery(f.q);
+    const likeCond = (expr: string): string => `${expr} LIKE ? ESCAPE '\\'`;
+    const blindOr = (): string =>
+      `(${likeCond('m.title')} OR ${likeCond('m.artist')} OR ${likeCond('r.note')} ` +
+        `OR EXISTS (SELECT 1 FROM record_tag rt2 JOIN tags t2 ON t2.id = rt2.tag_id WHERE rt2.record_id = r.id AND ${likeCond('t2.name')}))`;
+    const tagExists = (): string =>
+      `EXISTS (SELECT 1 FROM record_tag rt2 JOIN tags t2 ON t2.id = rt2.tag_id WHERE rt2.record_id = r.id AND ${likeCond('t2.name')})`;
+    for (const seg of parsed.bare) {
+      const like = `%${escapeLike(seg)}%`;
+      conds.push(blindOr());
+      params.push(like, like, like, like);
+    }
+    for (const v of parsed.artist) {
+      conds.push(likeCond('m.artist'));
+      params.push(`%${escapeLike(v)}%`);
+    }
+    for (const v of parsed.title) {
+      conds.push(likeCond('m.title'));
+      params.push(`%${escapeLike(v)}%`);
+    }
+    for (const v of parsed.tag) {
+      conds.push(tagExists());
+      params.push(`%${escapeLike(v)}%`);
+    }
+    for (const v of parsed.note) {
+      conds.push(likeCond('r.note'));
+      params.push(`%${escapeLike(v)}%`);
+    }
   }
   return { where: conds.join(' AND '), params };
 }

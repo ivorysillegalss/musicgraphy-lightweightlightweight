@@ -36,10 +36,18 @@
  * renderWorldCopies = false；maxZoom = 6）。BSD-3 归因 = attributionControl: false，
  * 文案放 /atlas 页脚静态行（评审案 §5 第 2/3 条处置）。
  */
-import { MapLibreMap, Marker } from 'maplibre-gl';
+import { MapLibreMap, Marker, setWorkerUrl } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoJSONSource, MapLayerMouseEvent, MapSourceDataEvent, StyleSpecification } from 'maplibre-gl';
 import { easeInOutCubic, FOCUS_DURATION_MS, focusViewFromBbox, type FocusView } from './camera';
+
+// v6 worker 显式指路（必须先于任何 Map 构造——模块加载即生效）：
+// maplibre v6 默认 worker URL = new URL('./maplibre-gl-worker.mjs', import.meta.url)，非字面量
+// 拼接令 vite 无法静态识别 → 构建产物缺 worker 文件 → 运行时 404 → worker 静默失败 →
+// 地图永久停摆（/atlas 两主题皆空白，2026-11-17 实跑发现）。修复 = worker 文件经
+// scripts/copy-maplibre-worker.mjs（prebuild）自托管进 /static/ + 此处 setWorkerUrl 显式
+// 指路（乙-5 自托管同源；升级 maplibre 后文件由 prebuild 自动重拷）。
+setWorkerUrl('/static/maplibre-gl-worker.mjs');
 import { buildLabels, featureBbox, geoFeatureKey, type GeoFeatureCollectionLike, type LabelPoint } from './labels';
 import { buildMapStyle } from './maplibre-style';
 import type { PlayState, PlaybackPort, StylePort } from './ports';

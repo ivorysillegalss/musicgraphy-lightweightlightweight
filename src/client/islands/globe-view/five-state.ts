@@ -62,6 +62,11 @@ function requireToken(tokens: FiveStateTokens, key: keyof FiveStateTokens): stri
  * 'name:' 前缀兜底键，GPU 侧补第三档同口径（assets 保证 name_en 非空字符串，
  * coalesce 仍防御缺槽位）。name 兜底用 match 而非第三条 in：in+concat 的语义
  * 等价，但既有 DR-M3 断言「ISO 档 = 恰两条 in 匹配」仍成立（D4 条款显式可辨）。
+ * ⚠️ match 分支标签必须平铺为 (label, output) 对——MapLibre v6 运行时校验只接受
+ * 数字/字符串标签，数组标签（['literal', codes] 整体作一个标签）会被整层拒绝
+ * （"Branch labels must be numbers or strings" → 五态填充层被丢弃、/atlas 两主题
+ * 皆空白；2026-11-17 实跑发现）。平铺后 ISO 码对本输入（'name:'+name_en）永不
+ * 命中，仅 'name:' 键生效——语义与原意等价。
  * 白名单含 'name:France'/'name:Norway'（真实国家）→ 基态正常显示；其余三个
  * -99 要素不入名单 → 恒 empty 近隐身（诚实呈现「无档案」）。
  */
@@ -74,8 +79,7 @@ function inListExpression(availableIsoCodes: string[]): DataExpression {
     [
       'match',
       ['concat', 'name:', ['coalesce', ['get', 'name_en'], '']],
-      ['literal', codes],
-      true,
+      ...codes.flatMap((code) => [code, true]),
       false
     ]
   ];

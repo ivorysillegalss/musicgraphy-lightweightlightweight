@@ -50,7 +50,7 @@ window.MG_DAILY_REPORTS = {
           kind: 'list',
           items: [
             '根 AGENTS.md：HEAD/基线/看板计数/部署与随行口径按实况校准；新增 worktree/管道退出码/autocrlf/staged-D/MapLibre worker/IAB 等踩坑条目。',
-            '用户级记忆 ~/.zcode/AGENTS.md：同步 11-17/18 实现潮、83 卡、318 基线、v1.4/v1.5、IM-33、待裁决 9 项；随机复制为 workspace-context/AGENTS-user-memory.md。',
+            '用户级记忆 ~/.zcode/AGENTS.md：同步 11-17/18 实现潮、83 卡、318 基线、v1.4/v1.5、IM-33、待裁决 9 项；随即复制为 workspace-context/AGENTS-user-memory.md。',
             'workspace-context/AGENTS-workspace-root.md ← 根 AGENTS.md 逐字节复制（换行差异由 git 归一）；AGENTS-legacy-repo.md 与遗留仓原文件核对 = 一致，未动。',
             'RESTORE.md：HEAD/基线/部署六件/直提 workspace-context/随行同步规则/数据不随行 口径更新。',
           ],

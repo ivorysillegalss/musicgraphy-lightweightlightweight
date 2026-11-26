@@ -29,8 +29,8 @@
   **远端实况（2026-11-27 全量同步会话核验）**：main = `c4c6a13`；workspace-context =
   `d8b6a2d` + 2026-11-27 同步收口笔（附件与看板元数据按实况更新）。
 - **看板线上镜像**：<https://musicgraphy-progress-ohqn.zai-ai.site>（公开无密钥，已接受；
-  2026-11-27 同步会话重部署 deploymentId `2125993859788169216`，复核 = progress-data.js
-  sha256 `e54ee770…` / daily-reports.js `692fa2c1…` 与本地 git blob 逐字节一致，
+  2026-11-27 同步会话重部署 deploymentId `2125994850625380352`，复核 = progress-data.js
+  sha256 `e54ee770…` / daily-reports.js `32410057…` 与本地 git blob 逐字节一致，
   lastSync '2026-11-27'；部署记录见 §5）。
 - **当前环境**（2026-11-27 全量同步会话确认）：工作区根 =
   `C:\Users\Administrator\.zcode\workspace\draft-8e6cfbb0-0eb1-401d-b0b0-e96203f0ba8a`
@@ -160,8 +160,8 @@
   SITE_DIR=. SPA_FALLBACK=0；程序 = 重建全新 stage（禁 patch 旧 stage）→
   `zcode-site.mjs check <stage>`（可先本地自检）→ `zcode-site.mjs deploy <stage> --site
   2120913580313718784`。历史部署记录：2026-11-16 = 2121999319969476608；
-  2026-11-18 = 2122744373392732160；2026-11-27 = 2125993859788169216（线上双文件
-  sha256 与 git blob 逐字节一致）。
+  2026-11-18 = 2122744373392732160；2026-11-27 = 2125994850625380352（线上双文件
+  sha256 与 git blob 逐字节一致；同日前次部署 2125993859788169216 已被日报勘误笔取代）。
 
 ## 6. 看板协议精华（progress-data.js 是唯一数据源）
 

@@ -22,7 +22,7 @@
    ```bash
    git clone https://github.com/ivorysillegalss/musicgraphy-lightweightlightweight.git <工作区根>/repo
    ```
-   - `main` 分支 = 主线代码仓（`musicgraphy/`，HEAD d8653d0 起持续顺延）。
+   - `main` 分支 = 主线代码仓（`musicgraphy/`，HEAD `c4c6a13` 起持续顺延）。
    - `workspace-context` 分支 = 文档包全量 + 本附件目录。
 2. **摆布局**：按 §0 把两份内容放到位——
    - `main` 分支工作树 → `<工作区根>/musicgraphy/`
@@ -32,7 +32,7 @@
    | 本分支文件 | 新环境落位 | 说明 |
    |---|---|---|
    | `AGENTS-workspace-root.md` | `<工作区根>/AGENTS.md` | 工作区根入口约束（环境/运维自包含） |
-   | `AGENTS-user-memory.md` | `~/.zcode/AGENTS.md`（即 Windows `C:\Users\<user>\.zcode\AGENTS.md`） | **ZCode 用户级记忆**（2026-11-15 晚最新同步版：73 卡/273 基线/HEAD d8653d0/待裁决清单 10 项） |
+   | `AGENTS-user-memory.md` | `~/.zcode/AGENTS.md`（即 Windows `C:\Users\<user>\.zcode\AGENTS.md`） | **ZCode 用户级记忆**（2026-11-27 全量同步版：83 卡 / 318 基线 / HEAD c4c6a13 / 待裁决清单 9 项） |
    | `AGENTS-legacy-repo.md` | 仅参考，不落位 | 遗留仓 AGENTS.md 历史副本；遗留仓本体已**永久封存**（2026-11-15 用户裁决），不在任何远端 |
    - 已在档无需复制：`文档包/04-源文档/AGENTS.md`（= 本分支根 `04-源文档/`）、
      `musicgraphy/AGENTS.md`（= main 分支内）。
@@ -49,16 +49,23 @@
    `ignore-scripts=false`）。vite build 报 esbuild 缺失即此步未生效。
 6. **git 身份**：本机无全局身份时，提交一律用仓库级参数
    `git -c user.name="…" -c user.email="…" commit …`。
-7. **验证**：`cd musicgraphy && npm run check`（基线见看板最新 evidence，
-   2026-11-15 晚 = 273/273 @ d8653d0）；文档包测试 `cd Musicgraphy-2.0-文档包 &&
+7. **验证**：`cd musicgraphy && npm run check`（基线 = **318/318 @ c4c6a13**，
+   2026-11-27 实跑复证；Node v26.13.0）；文档包测试 `cd Musicgraphy-2.0-文档包 &&
    node --test tests/`（11 项）。
+   - ⚠️ 门禁可重复性：`public/maplibre-gl-worker.mjs` 为 prebuild 派生物，已入 eslint ignores
+     （c4c6a13）——若从旧提交起环境，二次 `npm run check` 会因该文件扫出 1098 条 error。
 
 ## 2. 看板线上重部署（可选）
 
-- stage 重建纪律：从源三/六件重建（禁 patch 旧 stage）→ ZCode Site CLI 部署。
+- stage 重建纪律：**六件从 git blob 提取**（`git show "HEAD:08-进度看板/<file>" > stage/<file>`，
+  免 autocrlf CRLF 污染）→ 基建两件（`static-server.mjs` / `start.sh`，start.sh 必须 LF）随行 →
+  `zcode-site.mjs check <stage>` → `zcode-site.mjs deploy <stage> --site 2120913580313718784`——
+  **命令从工作区根执行**（2026-11-18 实测）。
 - siteId = `2120913580313718784`，domainLabel = `musicgraphy-progress-ohqn`
   （即工作区根 `.zcode-site.json` 内容；该文件刻意不入库 = 7f95537 披露先例）。
 - 线上镜像：https://musicgraphy-progress-ohqn.zai-ai.site（公开无密钥，已接受）。
+- 部署记录：2026-11-16 = 2121999319969476608；2026-11-18 = 2122744373392732160；
+  2026-11-27 = 见收口笔补记。
 
 ## 3. 权威序与开工三读（不变）
 
@@ -78,7 +85,11 @@
 
 ## 5. 后续同步约定
 
-- 文档包更新照旧在 `main` 分支收口三步（node --test → git 提交 → 看板变更时重部署）；
-  需要随行时把 `main` 快进合并到本分支（附件目录不冲突），再
-  `git push origin workspace-context`。
-- 用户级记忆（`~/.zcode/AGENTS.md`）以工作区实况为准定期重同步（其文件头自带同步时间戳）。
+- 文档包更新 = 测试 → 提交 → 看板变更时重部署（**直接提交 `workspace-context` 并 push**；
+  2026-11-17 起实际内容流）。本地 `main` 为旧收口分支（内容落后、无独有内容、永不 push）。
+- **Agent 约束类随行件必须同步**（2026-11-27 用户令）：根 `AGENTS.md` →
+  `AGENTS-workspace-root.md`；`~/.zcode/AGENTS.md` → `AGENTS-user-memory.md`；
+  看板 `meta.lastSync` / daily `meta.lastEntry` 同步更新——变更即复制 + 提交 + push。
+- 用户级记忆（`~/.zcode/AGENTS.md`）以工作区实况为准同步（其文件头自带同步时间戳）。
+- **数据文件不随行**（2026-11-27 用户口径）：SQLite DB / 封面 / backups 不入云端，
+  新环境按需重导入。

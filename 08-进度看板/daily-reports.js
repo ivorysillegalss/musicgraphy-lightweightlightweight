@@ -15,12 +15,108 @@ window.MG_DAILY_REPORTS = {
     project: 'Musicgraphy 2.0',
     purpose: '每日日报——当天做了什么、裁决了什么、移交了什么（与进度看板互为表里：看板记卡片终态，日报记过程与全貌）',
     created: '2026-11-14',
-    lastEntry: '2026-11-17',
+    lastEntry: '2026-11-27',
     boardLink: 'index.html',
     dataNote: '卡片级长期事实源 = progress-data.js（各卡 evidence 可核查 hash/路径/数字）；本页条目与其保持一致，冲突时以代码与卡片 evidence 为准',
   },
 
   reports: [
+    // ================= 2026-11-27 =================
+    {
+      date: '2026-11-27',
+      title: '全量同步收口：环境/看板元数据/Agent 约束对齐云端 + check 门禁可重复性修复',
+      summary: '用户令「看板元数据、Agent 约束这类工作区内容必须同步（数据库/封面不处理）」。核验结论：代码与文档双分支远端一致（ls-remote：main = c4c6a13；workspace-context = d8b6a2d + 本笔），线上看板两数据文件与 git blob 逐字节一致，无未提交/未推送工作。本笔收口三处漂移：① 根 AGENTS.md 与 ~/.zcode/AGENTS.md 按 11-27 实况重写（HEAD / 318 基线 / 83 卡 / IM-33 / v1.4+v1.5 条款 / 待裁决 9 项）并同步 workspace-context 两份随行副本；② RESTORE.md 同步实况口径；③ 看板 meta.lastSync 2026-11-16→2026-11-27、daily lastEntry 同步并补 11-18 缺记。另修复 check 门禁可重复性缺陷：public/maplibre-gl-worker.mjs（prebuild 派生物，gitignored）此前被 eslint 当源码扫出 1098 条 error——首轮 build 后二次 npm run check 必红（管道 tail 吞退出码故此前未暴露）；eslint ignores 增 public/** 后全量 check 318/318 可重复。',
+      stats: [
+        { label: '看板', value: '83 卡 = done 66 / pending 12 / watch 4 / blocked 1；lastSync 2026-11-16→2026-11-27' },
+        { label: '门禁', value: 'npm run check 318/318 @ c4c6a13（Node v26.13.0，实跑复证且可重复）；文档包 node --test 11/11' },
+        { label: '远端', value: 'origin/main = c4c6a13（本地=远端）；origin/workspace-context = d8b6a2d + 本同步笔；ls-remote 实测' },
+        { label: '线上', value: 'progress-data.js / daily-reports.js 线上 sha256 与 git blob 逐字节一致（重部署后复核）' },
+        { label: '修复', value: 'eslint ignores 增 public/**（worker 派生物）；check 二次运行不再因 1098 条 lint error 红' },
+        { label: '未纳入', value: 'SQLite DB / 封面 / backups 不纳入云端同步（用户 2026-11-27 口径）；B10 维持 blocked' },
+      ],
+      sections: [
+        {
+          heading: '同步核验（远端实测，非 tracking ref 推断）',
+          kind: 'list',
+          items: [
+            '代码：musicgraphy main 本地 c4c6a13 = origin/main（ls-remote），工作树干净、无 stash。',
+            '文档：文档包 workspace-context 本地 d8b6a2d = origin/workspace-context（ls-remote）；工作树仅 .zcode-site.json 未跟踪（本地站点配置，刻意不入库）。',
+            '本地文档包 main（ddea53b）= 旧收口谱系，相对 ws 仅多 5 行旧版文本，无独有内容、永不 push、不作事实源。',
+            '临时 worktree .tmp-wt-run（31e6106 detached）：自有改动仅 .gitignore 一行且已在推送的 6f17795 内，无搁置工作。',
+          ],
+        },
+        {
+          heading: '本笔收口（工作区内容同步）',
+          kind: 'list',
+          items: [
+            '根 AGENTS.md：HEAD/基线/看板计数/部署与随行口径按实况校准；新增 worktree/管道退出码/autocrlf/staged-D/MapLibre worker/IAB 等踩坑条目。',
+            '用户级记忆 ~/.zcode/AGENTS.md：同步 11-17/18 实现潮、83 卡、318 基线、v1.4/v1.5、IM-33、待裁决 9 项；随机复制为 workspace-context/AGENTS-user-memory.md。',
+            'workspace-context/AGENTS-workspace-root.md ← 根 AGENTS.md 逐字节复制（换行差异由 git 归一）；AGENTS-legacy-repo.md 与遗留仓原文件核对 = 一致，未动。',
+            'RESTORE.md：HEAD/基线/部署六件/直提 workspace-context/随行同步规则/数据不随行 口径更新。',
+          ],
+        },
+        {
+          heading: '修复与验证',
+          kind: 'list',
+          items: [
+            'check 首跑实况：npm run check | tail 显示 1098 条 eslint error 但退出码 0（管道吞码）→ 文件级定位唯一命中 public/maplibre-gl-worker.mjs（519KB 派生物）。',
+            '修复 = eslint.config.js ignores 增 public/**（一行，c4c6a13）；修复后全量实跑 typecheck/eslint/build/test 全绿 318/318。',
+            '文档包 node --test tests/ 11/11 绿；看板自检 ok（83 卡，progress-data/daily 语法有效）。',
+          ],
+        },
+      ],
+      evidence: [
+        '主线修复 = musicgraphy c4c6a13（eslint.config.js 一行；npm run check 318/318 实跑）',
+        '看板数据 = 08-进度看板/progress-data.js（meta.lastSync 2026-11-27）+ daily-reports.js（本条目）',
+        '随行件 = workspace-context/AGENTS-workspace-root.md（= 根 AGENTS.md）/ AGENTS-user-memory.md（= ~/.zcode/AGENTS.md）/ RESTORE.md',
+        '远端核验 = git ls-remote origin（main c4c6a13 / workspace-context d8b6a2d + 本笔）',
+        '线上核验 = https://musicgraphy-progress-ohqn.zai-ai.site/progress-data.js 与 daily-reports.js 的 sha256 = 本地 git blob sha256',
+      ],
+    },
+
+    // ================= 2026-11-18 =================
+    {
+      date: '2026-11-18',
+      title: '展示升级专项立项：R-113~R-118 六令 + 五路分析 + PM 四批 + 硬约束 v1.5 + 看板七卡',
+      summary: '补记（2026-11-27 同步会话据提交 d8b6a2d 回填；当日日报原缺记）。用户六令：字体过小样式丑（ui-ux-pro-max 重跑）/ 主页标签与瀑布流减量 / 星图 Topster 等入口置顶带动效 / 星图漫游化地区×时间双维随机抽卡 / Hover 展现基本信息（词曲制作人）/ 展示质量写进所有硬约束最高权重；「充分利用 react 和 js」= S2-3 P0 批文。产出：需求草案-2026-11-18 + 五路分析件（R-113 字体与样式 = 字体零交付，tokens 三套字体从未加载、实际全落雅黑宋体，30+ 逃逸字号；R-114 主页密度 = Tag 实测 25、舱 7 行平铺为主因；R-115 顶部入口两档 + 首屏预算走廊；R-117 Hover 卡两阶段，credits schema 无列 = 诚实缺口；评审案-星图漫游与双维筛选 = 载体 A-1 /genres 漫游舱、seed 入 URL 确定性取样、核心闭环零 JS）+ PM 排期四批（地基/联算/漫游/Hover，54 裁决点）+ 00-硬约束 v1.5 §二.10 展示质量条款（与 check 全绿同级门槛）+ 双 AGENTS 注记 + 看板 S2-35~S2-41 七卡（S2-35 done，36~41 pending 待批文）。',
+      stats: [
+        { label: '卡片', value: '全板 76→83 卡（S2-35~S2-41 七卡；S2-35 done，余 pending）' },
+        { label: '需求', value: 'R-113~R-118 六令全文入档（01-产品理念终稿/需求草案-2026-11-18-展示升级专项.md）' },
+        { label: '分析件', value: 'R-113 / R-114 / R-115 / R-117 四份 + 评审案-星图漫游与双维筛选（R-116）' },
+        { label: '红线', value: '00-硬约束 v1.5 §二.10：展示质量与 check 全绿同级交付门槛（用户钦定最高权重）' },
+        { label: '排期', value: '06-PM排期-展示升级专项-2026-11-18.md 四批 + 展示质量门八项 + 54 裁决点' },
+        { label: '门禁', value: 'check 基线纠正 318/318 起算（273 + S2-2 批 45）' },
+      ],
+      sections: [
+        {
+          heading: '分析关键发现',
+          kind: 'list',
+          items: [
+            'R-113 字体：tokens 声明三套字体从未加载，实际渲染全落雅黑/宋体；30+ 逃逸字号；A body15 / B body16 两档提案。',
+            'R-114 密度：Tag 实测 25（非 30）；舱 7 行平铺为撑大主因；甲/乙两档减量 + 与入口带联算。',
+            'R-115 入口：探索卡组 +170-200px / 胶囊行 +60-68px 两档；首屏预算走廊联算。',
+            'R-117 Hover：阶段一现有字段零 SQL；阶段二 credits schema 无列 = 诚实缺口（两阶段实施）。',
+            'R-116 星图漫游：/genres 漫游舱（排除 /atlas 复用）；seed 入 URL 确定性随机可分享；年代八档全非空、country 本环境 0% 诚实小维度；核心闭环零 JS。',
+          ],
+        },
+        {
+          heading: '待裁决（结转）',
+          kind: 'list',
+          items: [
+            'PM §8 收拢 54 项裁决点 = S2-36~S2-41 实施前置。',
+            'R-116 评审案 §8 八项待裁决（载体/取样维度/URL 语义等）。',
+          ],
+        },
+      ],
+      evidence: [
+        '提交 = d8b6a2d（展示升级专项收口；看板 83 卡 + 索引登记；node --test 11/11）',
+        '需求 = 01-产品理念终稿/需求草案-2026-11-18-展示升级专项.md',
+        '分析件 = 05-系统架构设计/分析-展示升级-R113-字体与样式.md / 分析-展示升级-R114-主页信息密度.md / 分析-展示升级-R115-顶部趣味入口.md / 分析-展示升级-R117-Hover信息卡.md / 评审案-星图漫游与双维筛选.md',
+        '排期 = 06-PM排期-展示升级专项-2026-11-18.md；硬约束 = 00-工作区关系与硬约束.md v1.5',
+        '部署 = 2122744373392732160（2026-11-18）',
+      ],
+    },
+
     // ================= 2026-11-17 =================
     {
       date: '2026-11-17',

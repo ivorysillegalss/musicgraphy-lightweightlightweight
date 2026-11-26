@@ -1,10 +1,15 @@
 # AGENTS.md — Musicgraphy 2.0 工作区入口约束（自包含）
 
-> 本文件 = 工作区根级 agent 入口说明（2026-11-13 归档整理）。
+> 本文件 = 工作区根级 agent 入口说明（2026-11-13 归档整理；**2026-11-27 全量同步会话更新**：
+> HEAD/门禁基线/看板计数/部署与随行口径按实况校准，并补齐 2026-11-15~18 实现潮与展示质量条款）。
 > 目标：**不依赖本机环境与任何会话记忆**，凭本工作区内的文件即可恢复全部上下文并继续开发。
 > 权威顺序：用户指示 > `Musicgraphy-2.0-文档包/00-工作区关系与硬约束.md`（工作区关系唯一权威）
 > > `musicgraphy/AGENTS.md`（主线仓纪律）> 本文件（环境/运维补充）> 看板 notes。
 > 本文件不重复权威文件内容，只补其缺口；冲突时以权威序高者为准。
+>
+> ⚠️ **2026-11-18 用户钦定最高权重：展示质量条款生效**（00-硬约束 v1.5 §二.10）——一切 UI
+> 产出的展示质量与 check 全绿为同级交付门槛（token 唯一来源 / UI 批次展示质量门八项 /
+> 动效感官层门控 / ui-ux-pro-max 方法论前置 / 实测复校）。任何 agent 做前端工作前必读该条款。
 
 ---
 
@@ -26,15 +31,16 @@
   hono/html 禁 raw 插用户数据；全局串行限流 ≥1s；备份 = VACUUM INTO；隐私红线 +
   资产自托管零 CDN。~~运行时依赖 = 2~~ / ~~SSR 岛屿（无 JS 基线）~~ / ~~RSS < 100MB~~ /
   ~~DAO < 200 行~~ 已废止（转观察指标；IM-14 CSS 预算、首屏 JS 预算、IM-19、无 hydration
-  同批废止）——详见文档包 00-硬约束 v1.3 + 05/实现决策记录 IM-30。
+  同批废止）——详见文档包 00-硬约束 **v1.5**（§二.4 红线 + **§二.10 展示质量条款**：
+  与 check 全绿同级交付门槛）+ 05/实现决策记录 IM-30/IM-33。
 
-## 2. 工作区根级文件清单（归档快照 2026-11-13）
+## 2. 工作区根级文件清单（2026-11-27 校准）
 
 | 项 | 说明 |
 |---|---|
 | `AGENTS.md` | 本文件 |
 | `Musicgraphy-2.0-文档包/` | 文档事实源（自述见其 `00-文件目录说明.txt`） |
-| `musicgraphy/` | 主线代码仓（HEAD 4aa10b1 + 未提交在制品，见 §5） |
+| `musicgraphy/` | 主线代码仓（origin/main HEAD `9fbc513`，工作树干净；check 318/318，见 §5） |
 | `Musicgraphy-2.0-代码库/` | 遗留存档仓（只读；工作树含未提交改动 = 存档快照的一部分，同样不得擅动） |
 | `tools/node-v26.13.0-win-x64.zip` | 便携 Node 安装包（解压后即运行时，见 §3） |
 | `tools/rezip-docpackage.ps1` | 文档包 zip 重建脚本（UTF-8 条目名 + 排除 .zcode + 回读自检） |
@@ -79,12 +85,14 @@
   `powershell -ExecutionPolicy Bypass -File tools/rezip-docpackage.ps1`
   （.NET ZipArchive；UTF-8 条目名；排除 `.zcode/`；末尾回读自检输出 entries/泄漏数）；默认收口不做。
 - **文档包单元测试（2026-11-14 用户新原则）**：文档包内 `node --test tests/`（cwd = 文档包根，
-  零依赖 node:test）——9 项可用性断言（看板数据结构/依赖引用完整性/渲染三件套/事实源在档/
+  零依赖 node:test）——11 项可用性断言（看板数据结构/依赖引用完整性/渲染三件套/事实源在档/
   登记完整性）。**所有文档/卡片修改完毕后必须先过测试再 git 提交**；测试红 = 不得提交。
-- **文档包 git 仓（2026-11-14 用户新建）**：`Musicgraphy-2.0-文档包/` = 独立 git 仓
-  （分支 `main`，基线 a0a4012，提交身份 `agent@musicgraphy.local`）。**新原则：所有卡片/文档
-  修改完毕后过测试 → git 提交**（message 带卡片号；只 add 本次变更文件）——测试红或未提交 = 未交付；
-  收口顺序 = 单元测试 → git 提交 → 线上重部署（看板数据变更时）；`/.zcode/` 已 ignore。
+- **文档包 git 仓（2026-11-14 用户新建；2026-11-16 起工作树 = `workspace-context` 分支）**：
+  `Musicgraphy-2.0-文档包/` = 独立 git 仓（origin = 同 GitHub 仓；提交身份
+  `agent@musicgraphy.local`）。**内容修改直接提交 `workspace-context` 并 push**（2026-11-17 起
+  实际内容流；附件目录零冲突）；本地 `main` 是旧收口分支（`ddea53b`，内容落后、永不 push、
+  不作事实源）。收口顺序 = 文档包测试 → git 提交 → 看板数据变更时线上重部署；
+  `/.zcode/` 已 ignore。
 - **⚠️ 禁用 `tar.exe`/bsdtar 重建任何 zip**：2026-11-12/13 两轮实测，中文 locale 下
   bsdtar 把非 ASCII 条目名写成 GBK、`-f` 输出文件名同样被 GBK 化（磁盘出现乱码名），
   且 `.zcode/` 会话状态会泄漏进包。ps1 是唯一可靠路径。
@@ -99,48 +107,68 @@
   （用户 2026-11-12 钦定，对所有 agent 无例外）。置 done 前置 = `npm run check` 全绿；
   evidence 必须可核查（数字/路径/hash）；看板与代码不一致时以代码为准修正。
   语法自检：`node -e "global.window={};require('./08-进度看板/progress-data.js');console.log('ok')"`（cwd = 文档包根）。
-- **看板线上部署**：`progress-data.js` 每次更新后**必须重部署**才反映线上。
-  stage = 工作区根 `.zcode-site/stage/`（看板三文件 + `static-server.mjs` + `start.sh`，
-  SITE_DIR=. SPA_FALLBACK=0）；程序 = 从源三文件重建 stage（禁 patch 旧 stage）→
-  ZCode Site CLI 部署（siteId 2120913580313718784，CLI =
-  `<plugins>/zcode-site/0.4.2/scripts/zcode-site.mjs`）。链接公开无密钥
-  （进度数据可被任何持链者查看——已接受）。
+- **看板线上部署**：`progress-data.js` / `daily-reports.js` 每次更新后**必须重部署**才反映线上。
+  stage = 工作区根 `.zcode-site/stage/`（**六件** index.html / app.js / progress-data.js /
+  daily.html / daily.js / daily-reports.js + `static-server.mjs` + `start.sh`，
+  SITE_DIR=. SPA_FALLBACK=0）。程序 = **重建全新 stage（禁 patch 旧 stage）**：六件用
+  `git show "HEAD:08-进度看板/<file>" > stage/<file>` 从 git blob 提取（字节级 = 仓库 LF 口径，
+  免 autocrlf 污染；工作树直拷是 CRLF 会比线上每行多 1 字节），基建两件原样随行（start.sh 必须 LF）
+  → `zcode-site.mjs check <stage>` → `zcode-site.mjs deploy <stage> --site
+  2120913580313718784`——**命令必须从工作区根执行**（2026-11-18 实测）。siteId
+  2120913580313718784，CLI = `<plugins>/zcode-site/0.4.2/scripts/zcode-site.mjs`
+  （0.5.0 同装；以实测可用版本为准）。链接公开无密钥（进度数据可被任何持链者查看——已接受）。
 
-## 5. 归档时刻状态快照（2026-11-13，以代码实况为准）
+## 5. 状态快照（2026-11-27 全量同步会话实况，以代码/看板为准）
 
-- **主线仓** HEAD `4aa10b1`；测试基线 62/62（W3-1 时点工作树）；运行时依赖 = 2
-  （hono + @hono/node-server）；RSS boot 73–94MB < 100MB。
-- **主线工作树未提交（W4-6-2 找回闭环交付，勿代作主张提交）**：
-  `docs/find-scenario.md`、`docs/find-scenario-screenshots/`、`tests/perf-like.test.ts`；
-  另 `AGENTS.md` 有未提交改动（= 00 文档头部指引，归属 00 文档成文会话）。
-  filter-cabin.ts 的 W4-6-2 改动（300ms 防抖 + popstate 守卫）已随 W3-1 提交
-  `4aa10b1` 入库（提交说明已披露）。
-- **遗留仓工作树未提交**（W2-2 元数据域落点 + AGENTS/README/context 等）——
-  同为存档快照的一部分，与主线未提交件一样**是否提交由用户裁决**。
-- **看板**：W0（6 卡）/ W1（10 卡）/ W2（2 卡）/ W3-1 全 done；W4-6-2、W4-6-3 done；
-  pending = W4-6-1、W7-9-1、W10-12-1；护栏 G1–G4 watch。
-- **下一步执行序**（事实源 = 文档包 `07-前端设计包/02-前端实现拆分方案.md` §8）：
-  T0✅ → P2✅ → P1✅ → P3✅ → **B1 联想域 → B2 导出域 → B3 仪表域**（第三波后端
-  prompt 已备好，标「待用户追认」）。
+- **主线仓** HEAD `c4c6a13`（= 9fbc513 + 2026-11-27 门禁可重复性修复；origin/main 一致），
+  工作树干净、无 stash；`npm run check` **318/318** 全绿实跑复证（tsc/eslint/vite build/node:test，
+  Node v26.13.0）；运行时依赖 = 3（hono / @hono/node-server / maplibre-gl，观察指标）；
+  main.css 24,319B（观察指标）。
+- **门禁可重复性修复（2026-11-27）**：`public/maplibre-gl-worker.mjs` 为 prebuild 派生物
+  （519KB，gitignored，源 node_modules）——此前首轮 build 落盘后，二次 `npm run check` 的
+  `eslint .` 会把它当源码扫出 1098 条 error，check 在 lint 步必红（管道 tail 吞退出码故此前
+  未暴露）。修复 = `eslint.config.js` ignores 增 `'public/**'` 一行；修复后全量 check 可重复。
+- **文档包** = `workspace-context` 分支（`d8b6a2d` + 2026-11-27 同步收口笔）；
+  `node --test tests/` 11/11 绿。本地 `main`（ddea53b）为旧收口分支，内容落后、**永不 push**、
+  不作事实源。
+- **看板** 7 tracks × 83 卡 = **done 66 / pending 12 / watch 4（G1–G4）/ blocked 1**；
+  lastSync = 2026-11-27。
+  - pending 12 = S2-4~S2-7（设计参考四站总卡）+ S2-32（爬取限流）+ S2-33（多用户账户）+
+    S2-36~S2-41（展示升级六批，待 PM §8 裁决点批文）。
+  - blocked 1 = B10（netease 元数据补全）：本环境 DB 为 11-13 前快照；**用户 2026-11-27
+    明确 DB/封面不纳入云端同步范围**，维护 blocked 状态；旧机 DB 搬运 or 重导入仍待裁决。
+- **2026-11-15~18 实现潮（均已收口，看板与日报同步）**：
+  1. 11-15 Radiooooo 地图 0→1 → `/atlas`（S2-28）；设计参考第一/二批 16 卡 done
+     （`/panorama` `/crate` `/random` `/genres` + preview/audio-viz/genre-scan）；B5 导入
+     实况 fetched=188/imported=181（IM-31/32）。
+  2. 11-16 发布后迭代第三批 `d8653d0`（S2-1 `/topsters/about`、S2-29 登录态+logout、
+     S2-30 封面墙下拉、S2-31 筛选 details 收纳），check 273/273。
+  3. 11-17 S2-2 搜索分字段（方案 b，`34d4837`，check 318/318 = 273+45）；S2-28 验收实跑修
+     两缺陷（五态 match 平铺 `b6ca383` + worker 404 `ff0a187`/`6f17795`）；S2-34 页面×数据元
+     关系图谱；S2-32/S2-33 双专项登记（R-111/R-112，评审案随批）。
+  4. 11-18 展示升级专项（R-113~R-118）：需求草案 + 五路分析件 + PM 排期四批 + 00-硬约束
+     v1.5 §二.10 展示质量条款 + 看板 S2-35~S2-41 七卡（S2-35 done，余待裁决）。
+- **SHIP 余项**：landing / 赞助链接 / 全渠道发布 + W12 决策门——均在用户手上。
 
-## 6. 待用户裁决清单（agent 只能备案产出评审案，不能自决）
+## 6. 待用户裁决清单（agent 只能备案产出评审案，不能自决；2026-11-27 同步会话整理）
 
-> **2026-11-15 用户裁决令「修复 D1-D4」收口**：第 1 项（双仓归属）= **永久封存**；第 2 项
-> （alias_sources 编码归一）= 主线对象数组唯一权威、遗留仓形态冻结；第 7 项（未提交在制品）
-> = 主线两笔入库（3378964 W4-6-2 三件 + b3ff02c AGENTS.md）；D1 页面守卫缺口已修复
-> （主线 c9e1692，check 173/173 全绿，IM-27 登记）。第 3/4/5/6 项（IM-14/15/16/17）此前已
-> 随追认令/实现闭环关闭。清单清零；后续新裁决项在此追加。
+> 已销项（2026-11-14/15 落地）：双仓归属=永久封存、alias_sources=D3 了结、IM-14/15/16/17、
+> B1–B3 追认令、B4/B5/B7 派工令、P1-10/W10/W11 批准、未提交在制品提交时机。以下为现行清单。
 
-1. **双仓归属/合并**：`musicgraphy/`（主线）vs `Musicgraphy-2.0-代码库/`（遗留存档）。
-2. **alias_sources 编码归一**：主线 = 对象数组；遗留仓 = `"source:source_id"` 字符串
-   （shared/types.ts 冻结 string[]）。
-3. **IM-14**：CSS 产物 19.02KB（gzip 4.37）超 15KB 预算线——建议接受待追认
-   （`05-系统架构设计/实现决策记录.md` §7）。
-4. **IM-15**：add-dialog 岛屿 149 行贴线（达标，登记备查）。
-5. **IM-16**：P1-5「最近艺术家联想」未渲染（主线 DAO 缺方法）→ B1 提前执行待追认；
-   缺口报告 = `musicgraphy/docs/associations-gap.md`。
-6. **IM-17**：jpeg-js 进 devDeps 待追认（运行时依赖仍 = 2，G1 已注记）。
-7. **未提交在制品的提交时机**（主线 W4-6-2 三件 + 遗留仓 W2-2 落点）。
+1. **7f95537 归属澄清追认**（B5 会话文档件随 Topster 收口捎带入库，提交说明误标）。
+2. **IM-23 同号两则补正案**（网易云评审案登记 与 P1-6 实现决策同号；IM 只增不改）。
+3. **colorOf(16)/13「灰」双 chip 消歧**（涉种子库生命周期）。
+4. **DR-M1 三件待追认**：① MapLibre GL JS 引擎裁决（评审案-地理渲染引擎选型）
+   ② maplibre-gl 入 dependencies（运行时依赖 2→3 = 观察指标）③ `/atlas` 页面挂载。
+5. **b180dd7 捎带并行 globe 文件待追认**（7f95537 同族）。
+6. **R-103 React 接入实施立项**：方向已裁决（2026-11-18「充分利用 react 和 js」= S2-3 P0
+   批文）；实施须评审案 + 红线修订（S2-37 React 基座批）。
+7. **mb-calibrate 503 墙剩余约 67 行 genres/year 补全**：冷却后重跑增量（resumable，
+   无需新裁决即可重跑；用户叫停则维持现状）。
+8. **展示升级专项批文**：PM 排期 `06-PM排期-展示升级专项-2026-11-18.md` §8 收拢 54 项裁决点
+   ——S2-36~S2-41 实施前置（另含 R-116 星图漫游 §8 八项待裁决）。
+9. **B10 数据裁决**：旧机 DB 搬运 vs 本环境重导入（DB/封面不纳入云端同步 = 用户 2026-11-27
+   口径；具体执行方式仍待定）。
 
 ## 7. 踩坑备忘（实测教训，勿重蹈）
 
@@ -163,13 +191,41 @@
   静默无效；reload 后 scrollY 归零，**坐标点击前必须确认元素在 viewport 内**
   （曾致连点视口外空白误判为网站 bug）；locator.evaluate 回调是单元素语义非数组。
 - **看板并发**：多会话同时更新看板时，插入 notes 前先 `node` 自检看最新条数再重读重试。
+- **命令链/管道吞退出码**（2026-11-15/16/27 三次实测）：`cmd1 && cmd2` 前置失败可能被吞；
+  `cmd | tail` 的退出码 = tail 的——**2026-11-27 实测 `npm run check | tail` 把 lint 的 1098 条
+  error 全遮成 exit 0**。正确写法 = 重定向到文件后 `rc=$?`，或 `PIPESTATUS`，再判分支。
+- **镜像一致性口径（autocrlf）**：本机 autocrlf=true → 工作树 CRLF、git blob LF、线上 LF。
+  判定「本地 vs 线上一致」必须用 **git blob hash vs 线上文件 hash**（工作树 hash 不可作判据）；
+  线上比工作树少的字节数 = 行数时先疑换行符。
+- **并行 worktree 约定**（2026-11-17 用户裁决 v1.4）：多会话开发一律 `git worktree add
+  wt/<task-id> -b task/<task-id>`；主树 = 收口位（只 merge/push/部署）；主树被占时走 detached
+  worktree + `git update-ref` 零扰动通道。worktree 只消编辑期冲突，**合并期同区域冲突仍在**
+  （按「代码为事实源」+ 双方披露解决）；同内容双谱系用 cherry-pick 归并。
+- **并行提交的索引假象**：在临时 worktree 提交后，主工作树索引可能残留 staged-D 假象——
+  提交前 `git restore --staged` 非自己的 D 项并复核 `git diff --cached --stat` 恰为自己文件集，
+  否则会毁掉他人刚提交的文件。
+- **子 agent 并发上限浮动**：实测 1（2026-11-16）与 3（2026-11-18）两档，按宿主配额分批派工；
+  超限报 "user concurrency limit exceeded"，补派即可。
+- **GitHub 直连不稳**：21s 超时/拒连交替，数分钟后恢复；fetch 可走本地 clone 搬运通道，
+  push 等恢复窗口重试（2026-11-27 实测推送正常）；部署走 ZCode Site 通道，与 GitHub 无关。
+- **看板部署**：`zcode-site.mjs deploy` **必须从工作区根执行**；stage 六件从 git blob 提取
+  （工作树直拷 = CRLF，线上会每行多 1 字节）。
+- **图引擎（MapLibre v6）**：worker URL 由 `import.meta.url` 非字面量拼接 → vite 静态分析
+  不识别 → 产物缺 worker 文件 → 运行时 404 且构造期错误无监听 = 首次实例永久静默。修复 =
+  prebuild 拷 worker 进 `public/` + `setWorkerUrl` 显式指路；GPU 侧 style 表达式校验只在浏览器
+  运行时发生（node:test 结构断言抓不到），`match` 分支标签只接受数字/字符串。
+- **ZCode IAB 补充**（2026-11-17/18）：截图合成器可能产生伪影（以 DOM 状态为准）；
+  异步 `evaluate` 结果不 await 会读到旧值（用 `window` 暂存 + 同步轮询）；调试钩子
+  `window.__mgMap` 可直读引擎内部。
 
 ## 8. 深入阅读顺序（按需）
 
-- 需求/裁决：文档包 `01-产品理念终稿/` → `02-变现文档包/00-README.md`（方案 A/B）→
+- **需求/裁决**：文档包 `01-产品理念终稿/`（含 2026-11-15 两份 + 2026-11-17 R-111/R-112 +
+  2026-11-18 R-113~R-118 需求草案）→ `02-变现文档包/00-README.md`（方案 A/B）→
   `01-PRD` → `02-数据模型与API设计` → `07-系统架构与选型ADR`。
-- 技术追溯：`05-系统架构设计/`（DESIGN.md / 存储层评审 R1–R10 / 五维复审 V1–V16 /
-  实现决策记录 IM-1~IM-20）。
+- **技术追溯**：`05-系统架构设计/`（DESIGN.md / 存储层评审 R1–R10 / 五维复审 V1–V16 /
+  实现决策记录 IM-1~IM-33 / 评审案：网易云导入器、多用户并发与封面缓存、netease 元数据补全、
+  地理渲染引擎选型、搜索分字段定向、爬取限流对策、星图漫游与双维筛选）+ `页面数据元关系图谱.md`。
 - 前端实现：`07-前端设计包/00-README.md` → `01-设计系统PRD` → MASTER.md（token 唯一
   来源）→ `02-前端实现拆分方案.md`（实现与派工事实源）。
 - 执行排期：`06-PM排期与研发可持续性计划.md`。
